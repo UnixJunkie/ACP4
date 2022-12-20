@@ -1,0 +1,6 @@
+;; installed executables / public targets
+(executables
+  (names acp4 scissors)
+  (public_names acp4 acp4_scissors)
+  (modules ph4 acp4 gnuplot common sdf_3D scissors)
+  (libraries batteries dolog minicli parany vector3 line_oriented cpm bst))
