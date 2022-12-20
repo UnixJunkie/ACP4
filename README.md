@@ -1,5 +1,6 @@
 # ACP4: AutoCorrelation of Pharmacophore Features
 
+```
 acp4 program usage:
   ./acp4
   [-i <filename.ph4>]: input file to encode
@@ -22,7 +23,9 @@ acp4 program usage:
   [-td <float>]: maximum Tanimoto _distance_ to (single) query
   [--BS]: load optimal defaults for binding-sites (ignores -c and -dx)
   [-v]: verbose/debug mode
+```
 
+```
 acp4_scissors program usage:
   ./scissors
   -l <ligand.sdf>: binding-site ligand input file
@@ -30,3 +33,4 @@ acp4_scissors program usage:
   [-d <float>]: distance cutoff (default=5.00)
   -o <output.ph4>: ligand-defined binding site output file
   [-v]: verbose/debug mode
+```
