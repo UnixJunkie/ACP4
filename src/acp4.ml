@@ -181,7 +181,7 @@ end
 
 (* protein Binding-Sites *)
 module BS_defaults = struct
-  let radial_cutoff = 30.0
+  let radial_cutoff = 40.0
   let dx = 0.9
 end
 
