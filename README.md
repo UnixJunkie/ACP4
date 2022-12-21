@@ -34,3 +34,20 @@ acp4_scissors program usage:
   -o <output.ph4>: ligand-defined binding site output file
   [-v]: verbose/debug mode
 ```
+
+To extract pharmacophore points from a molecule in SDF format,
+use molenc_ph4.py:
+```
+usage: molenc_ph4.py [-h] [-i input.sdf] [-o output.ph4] [--bild] [--no-group]
+                   [--permissive]
+
+compute pharmacophore features for 3D molecules
+
+options:
+  -h, --help     show this help message and exit
+  -i input.sdf   conformers input file
+  -o output.ph4  ph4 features output file
+  --bild         output BILD files for visu in chimera
+  --no-group     turn OFF grouping of HYD features
+  --permissive   turn OFF rdkit valence check
+```
