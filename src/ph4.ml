@@ -97,8 +97,8 @@ let cluster_features mol =
   let cluster_ids = IntSet.of_array idx2cluster in
   let m = IntSet.cardinal cluster_ids in
   (* Log.info "%d clusters" m; *)
-  let features = A.create m HYD in
-  let coords = A.create m (V3.make 0. 0. 0.) in
+  let features = A.make m HYD in
+  let coords = A.make m (V3.make 0. 0. 0.) in
   let cid_i = ref 0 in
   IntSet.iter (fun cid ->
       (* Log.info "cid: %d" cid; *)
