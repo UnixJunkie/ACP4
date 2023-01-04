@@ -3,18 +3,19 @@ authors: "Francois Berenger"
 maintainer: "unixjunkie@sdf.org"
 license: "GPL-3.0-only"
 homepage: "https://github.com/tsudalab/ACP4"
+dev-repo: "git+https://github.com/tsudalab/ACP4.git"
 bug-reports: "https://github.com/UnixJunkie/ACP4/issues"
 build: ["dune" "build" "-p" name "-j" jobs]
 install: [
   ["cp" "bin/acp4_ph4.py" "%{bin}%/acp4_ph4.py"]
 ]
 depends: [
-  "batteries"
-  "bst"
+  "batteries" {>= "3.3.0"}
+  "bst" {>= "4.0.0"}
   "dolog" {> "4.0.0"}
-  "dune" {>= "1.11"}
+  "dune" {>= "2.9"}
   "line_oriented"
-  "minicli"
+  "minicli" {>= "5.0.0"}
   "ocaml" {>= "4.08"}
   "parany"
   "vector3"
@@ -25,3 +26,7 @@ depopts: [
   "conf-rdkit"   # the python script will not work if not present
 ]
 synopsis: "ACP4: AutoCorrelation of Pharmacophore Features"
+# url {
+#   src: "https://github.com/tsudalab/ACP4/archive/refs/tags/vXXX.tar.gz"
+#   checksum: "md5="
+# }
