@@ -297,6 +297,7 @@ let main () =
               [-np <int>]: nprocs (default=1)\n  \
               [-s <int>]: BST chunk size (default=%d)\n  \
               [-c <float>]: cutoff distance (default=%.2f)\n  \
+              [-csize <int>]: chunk size (for better parallelization)\n  \
               [-f]: force overwriting binary cache files, if any\n  \
               use -f if you are changing -dx or -c compared to previous \
               queries\n  \
@@ -331,6 +332,7 @@ let main () =
   let output_fn = CLI.get_string ["-o"] args in
   let force = CLI.get_set_bool ["-f"] args in
   let nprocs = CLI.get_int_def ["-np"] args 1 in
+  let csize = CLI.get_int_def ["-csize"] args 1 in
   let bst_chunk_size =
     CLI.get_int_def ["-s"] args Ligand_defaults.bst_chunk_size in
   let binding_site_mode = CLI.get_set_bool ["--BS"] args in
@@ -370,7 +372,7 @@ let main () =
   (match selected_mode with
    | Encode input_fn ->
      LO.with_infile_outfile input_fn output_fn (fun input output ->
-         Parany.run ~preserve:true nprocs
+         Parany.run ~preserve:true nprocs ~csize:csize
            ~demux:(fun () ->
                try Ph4.read_one_ph4_encoded_molecule input
                with End_of_file -> raise Parany.End_of_input)
