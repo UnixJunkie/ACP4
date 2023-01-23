@@ -14,10 +14,10 @@ depends: [
   "bst" {>= "4.0.0"}
   "dolog" {> "4.0.0"}
   "dune" {>= "2.9"}
-  "line_oriented"
+  "line_oriented" {>= "1.1.0"}
   "minicli" {>= "5.0.0"}
   "ocaml" {>= "4.08"}
-  "parany"
+  "parany" {>= "11.0.0"}
   "vector3"
   "cpm" {>= "12.2.0"} # needs MakeROC.fast_power_metric_a
 ]
@@ -26,7 +26,7 @@ depopts: [
   "conf-rdkit"   # the python script will not work if not present
 ]
 synopsis: "ACP4: AutoCorrelation of Pharmacophore Features"
-# url {
-#   src: "https://github.com/tsudalab/ACP4/archive/refs/tags/vXXX.tar.gz"
-#   checksum: "md5="
-# }
+#url {
+#  src: "https://github.com/tsudalab/ACP4/archive/refs/tags/vXXX.tar.gz"
+#  checksum: "md5=YYY"
+#}
