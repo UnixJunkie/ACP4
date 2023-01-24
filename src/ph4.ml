@@ -205,11 +205,13 @@ let parse_ph4_line input =
         to_parse in
     raise exn
 
-let read_name_num_ph4_features input =
-  let line = input_line input in
+let get_name_num_features line =
   Scanf.sscanf line "%d:%s" (fun num_feats name ->
       (name, num_feats)
     )
+
+let read_name_num_ph4_features input =
+  get_name_num_features (input_line input)
 
 type molecule = { name: string;
                   elements: int array;
