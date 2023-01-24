@@ -374,9 +374,11 @@ let main () =
      LO.with_infile_outfile input_fn output_fn (fun input output ->
          Parany.run ~preserve:true nprocs ~csize:csize
            ~demux:(fun () ->
-               try Ph4.read_one_ph4_encoded_molecule input
+               try Ph4.preread_one_ph4_encoded_molecule input
                with End_of_file -> raise Parany.End_of_input)
-           ~work:(Ph4.encode verbose cutoff dx)
+           ~work:(fun name_lines ->
+               Ph4.encode verbose cutoff dx
+                 (Ph4.parse_one_ph4_encoded_molecule name_lines))
            ~mux:(output_code output mol_count nb_dx)
        )
    | Single_query (queries_fn, db_fn)
