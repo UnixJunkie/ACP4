@@ -234,6 +234,15 @@ let read_one_ph4_encoded_molecule input =
       ) in
   { name; features; coords }
 
+(* reader for the parallel encoder (does less work) *)
+let preread_one_ph4_encoded_molecule input: string * (string array) =
+  let name, num_features = read_name_num_ph4_features input in
+  (if num_features <= 1 then
+     Log.warn "mol %s: %d ph4-feats" name num_features
+  );
+  let lines = Array.init num_features (fun _i -> input_line input) in
+  (name, lines)
+
 (* [cutoff]: longest interatomic distance allowed (A)
    [dx]: axis discretization step
    [mol]: molecule to encode *)
