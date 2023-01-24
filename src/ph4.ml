@@ -193,8 +193,7 @@ let features_of_channel c =
 let string_of_channel c =
   channel_strings.(c)
 
-let parse_ph4_line input =
-  let to_parse = input_line input in
+let parse_ph4_line to_parse =
   (* "^HYD 1.0 2.0 3.0$" *)
   try
     Scanf.sscanf to_parse "%s@ %f %f %f"
@@ -204,6 +203,9 @@ let parse_ph4_line input =
     let () = Log.fatal "Sdf_3D.parse_ph4_line: cannot parse: '%s'"
         to_parse in
     raise exn
+
+let read_and_parse_ph4_line input =
+  parse_ph4_line (input_line input)
 
 let get_name_num_features line =
   Scanf.sscanf line "%d:%s" (fun num_feats name ->
@@ -223,7 +225,7 @@ let read_one_ph4_encoded_molecule input =
   let coords =
     Array.init num_features
       (fun i ->
-         let (feat, xyz) = parse_ph4_line input in
+         let (feat, xyz) = read_and_parse_ph4_line input in
          features.(i) <- feat;
          xyz
       ) in
