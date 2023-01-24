@@ -213,11 +213,6 @@ let get_name_num_features line =
 let read_name_num_ph4_features input =
   get_name_num_features (input_line input)
 
-type molecule = { name: string;
-                  elements: int array;
-                  coords: Vector3.t array;
-                  bonds: int list array }
-
 (* reader for the output of molenc_ph4.py *)
 let read_one_ph4_encoded_molecule input =
   let name, num_features = read_name_num_ph4_features input in
@@ -242,6 +237,19 @@ let preread_one_ph4_encoded_molecule input: string * (string array) =
   );
   let lines = Array.init num_features (fun _i -> input_line input) in
   (name, lines)
+
+(* parser for the parallel encoder (in worker's loop) *)
+let parse_one_ph4_encoded_molecule (name, lines): molecule_ph4 =
+  let num_features = A.length lines in
+  let features = Array.make num_features ARO in
+  let coords =
+    Array.init num_features
+      (fun i ->
+         let (feat, xyz) = parse_ph4_line lines.(i) in
+         features.(i) <- feat;
+         xyz
+      ) in
+  { name; features; coords }
 
 (* [cutoff]: longest interatomic distance allowed (A)
    [dx]: axis discretization step
