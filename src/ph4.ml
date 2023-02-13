@@ -193,8 +193,7 @@ let features_of_channel c =
 let string_of_channel c =
   channel_strings.(c)
 
-let parse_ph4_line input =
-  let to_parse = input_line input in
+let parse_ph4_line to_parse =
   (* "^HYD 1.0 2.0 3.0$" *)
   try
     Scanf.sscanf to_parse "%s@ %f %f %f"
@@ -205,16 +204,16 @@ let parse_ph4_line input =
         to_parse in
     raise exn
 
-let read_name_num_ph4_features input =
-  let line = input_line input in
+let read_and_parse_ph4_line input =
+  parse_ph4_line (input_line input)
+
+let get_name_num_features line =
   Scanf.sscanf line "%d:%s" (fun num_feats name ->
       (name, num_feats)
     )
 
-type molecule = { name: string;
-                  elements: int array;
-                  coords: Vector3.t array;
-                  bonds: int list array }
+let read_name_num_ph4_features input =
+  get_name_num_features (input_line input)
 
 (* reader for the output of molenc_ph4.py *)
 let read_one_ph4_encoded_molecule input =
@@ -226,7 +225,29 @@ let read_one_ph4_encoded_molecule input =
   let coords =
     Array.init num_features
       (fun i ->
-         let (feat, xyz) = parse_ph4_line input in
+         let (feat, xyz) = read_and_parse_ph4_line input in
+         features.(i) <- feat;
+         xyz
+      ) in
+  { name; features; coords }
+
+(* reader for the parallel encoder (does less work) *)
+let preread_one_ph4_encoded_molecule input: string * (string array) =
+  let name, num_features = read_name_num_ph4_features input in
+  (if num_features <= 1 then
+     Log.warn "mol %s: %d ph4-feats" name num_features
+  );
+  let lines = Array.init num_features (fun _i -> input_line input) in
+  (name, lines)
+
+(* parser for the parallel encoder (in worker's loop) *)
+let parse_one_ph4_encoded_molecule (name, lines): molecule_ph4 =
+  let num_features = A.length lines in
+  let features = Array.make num_features ARO in
+  let coords =
+    Array.init num_features
+      (fun i ->
+         let (feat, xyz) = parse_ph4_line lines.(i) in
          features.(i) <- feat;
          xyz
       ) in

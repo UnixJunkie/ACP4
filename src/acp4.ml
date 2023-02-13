@@ -45,6 +45,24 @@ let output_code output count nb_dx (name, encoded) =
   fprintf output "\n";
   incr count
 
+(* like output_code, but to a newline-terminated string *)
+let sprintf_code nb_dx (name, encoded): string =
+  let buff = Buffer.create 1024 in
+  let label_int = if is_active name then +1 else -1 in
+  (* classification label expected by liblinear is
+     +1 (active) or -1 (inactive) *)
+  bprintf buff "%+d" label_int;
+  A.iteri (fun i_chan channel ->
+      IntMap.iter (fun i_dx feat ->
+          (* liblinear wants indexes to start at 1 --> 1 + ... *)
+          let feat_idx = 1 + i_dx + (i_chan * nb_dx) in
+          bprintf buff " %d:%g" feat_idx feat
+        ) channel
+    ) encoded;
+  (* terminate this molecule's vector *)
+  Buffer.add_char buff '\n';
+  Buffer.contents buff
+
 let int32_array_of_list (l: int list): int32_array =
   let n = L.length l in
   let arr = BA1.create BA.Int32 BA.C_layout n in
@@ -374,10 +392,16 @@ let main () =
      LO.with_infile_outfile input_fn output_fn (fun input output ->
          Parany.run ~preserve:true nprocs ~csize:csize
            ~demux:(fun () ->
-               try Ph4.read_one_ph4_encoded_molecule input
+               try Ph4.preread_one_ph4_encoded_molecule input
                with End_of_file -> raise Parany.End_of_input)
-           ~work:(Ph4.encode verbose cutoff dx)
-           ~mux:(output_code output mol_count nb_dx)
+           ~work:(fun name_lines ->
+               let encoded =
+                 Ph4.encode verbose cutoff dx
+                   (Ph4.parse_one_ph4_encoded_molecule name_lines) in
+               sprintf_code nb_dx encoded)
+           ~mux:(fun line ->
+               output_string output line;
+               incr mol_count)
        )
    | Single_query (queries_fn, db_fn)
    | Multiple_queries (queries_fn, db_fn) ->
