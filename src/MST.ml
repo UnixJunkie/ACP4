@@ -1,15 +1,10 @@
-(* Copyright (C) 2020, Francois Berenger
+(* Copyright (C) 2023, Francois Berenger
+   Tsuda laboratory, The University of Tokyo,
+   5-1-5 Kashiwa-no-ha, Kashiwa-shi, Chiba-ken, 277-8561, Japan.
 
-   Yamanishi laboratory,
-   Department of Bioscience and Bioinformatics,
-   Faculty of Computer Science and Systems Engineering,
-   Kyushu Institute of Technology,
-   680-4 Kawazu, Iizuka, Fukuoka, 820-8502, Japan.
-
-   Minimum Spanning Tree (MST) over the dataset's Gram matrix.
-   Molecules are connected all to all (undirected graph).
-   The edge weight between two molecules is the Tanimoto distance between
-   their fingerprints.
+   Minimum Spanning Tree (MST) over a dataset's Gram matrix.
+   Nodes are connected all to all (undirected graph).
+   The edge weight between two nodes is the Tanimoto distance between them.
 
    Probst, D., & Reymond, J. L. (2020).
    Visualization of very large high-dimensional data sets as minimum spanning
