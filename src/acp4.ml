@@ -18,134 +18,9 @@ module LO = Line_oriented
 module Log = Dolog.Log
 module S = BatString
 
-type int32_array   = (int32, BA.int32_elt,   BA.c_layout) BA1.t
-type float32_array = (float, BA.float32_elt, BA.c_layout) BA1.t
-
-(* indexing ALDH1_25conf w/ One_band consumes about 15% of 32GM RAM
-   when using OCaml native integers and floats (not 32b like now) *)
-type sparse_float_fp = { indexes: int32_array;
-                         values: float32_array }
-
-let is_active name =
-  S.starts_with name "active"
-
-let output_code output count nb_dx (name, encoded) =
-  let label_int = if is_active name then +1 else -1 in
-  (* classification label expected by liblinear is
-     +1 (active) or -1 (inactive) *)
-  fprintf output "%+d" label_int;
-  A.iteri (fun i_chan channel ->
-      IntMap.iter (fun i_dx feat ->
-          (* liblinear wants indexes to start at 1 --> 1 + ... *)
-          let feat_idx = 1 + i_dx + (i_chan * nb_dx) in
-          fprintf output " %d:%g" feat_idx feat
-        ) channel
-    ) encoded;
-  (* terminate this molecule vector *)
-  fprintf output "\n";
-  incr count
-
-(* like output_code, but to a newline-terminated string *)
-let sprintf_code nb_dx (name, encoded): string =
-  let buff = Buffer.create 1024 in
-  let label_int = if is_active name then +1 else -1 in
-  (* classification label expected by liblinear is
-     +1 (active) or -1 (inactive) *)
-  bprintf buff "%+d" label_int;
-  A.iteri (fun i_chan channel ->
-      IntMap.iter (fun i_dx feat ->
-          (* liblinear wants indexes to start at 1 --> 1 + ... *)
-          let feat_idx = 1 + i_dx + (i_chan * nb_dx) in
-          bprintf buff " %d:%g" feat_idx feat
-        ) channel
-    ) encoded;
-  (* terminate this molecule's vector *)
-  Buffer.add_char buff '\n';
-  Buffer.contents buff
-
-let int32_array_of_list (l: int list): int32_array =
-  let n = L.length l in
-  let arr = BA1.create BA.Int32 BA.C_layout n in
-  L.iteri (fun i x ->
-      BA1.unsafe_set arr i (Int32.of_int x)
-    ) l;
-  arr
-
-let float32_array_of_list (l: float list): float32_array =
-  let n = L.length l in
-  let arr = BA1.create BA.Float32 BA.C_layout n in
-  L.iteri (fun i x ->
-      BA1.unsafe_set arr i x
-    ) l;
-  arr
-
-(* transform the array of (float IntMap.t) into something more efficient
-   to compute Tanimoto *)
-let freeze nb_dx (name, encoded): (string * sparse_float_fp) =
-  let idxs = ref [] in
-  let vals = ref [] in
-  A.iteri (fun i_chan channel ->
-      IntMap.iter (fun i_dx feat ->
-          (* liblinear wants indexes to start at 1 --> 1 + ... *)
-          let feat_idx = 1 + i_dx + (i_chan * nb_dx) in
-          idxs := feat_idx :: !idxs;
-          vals := feat :: !vals
-        ) channel
-    ) encoded;
-  (name, { indexes = int32_array_of_list   (L.rev !idxs) ;
-           values  = float32_array_of_list (L.rev !vals) })
-
-let tanimoto (_l1, fp1) (_l2, fp2) =
-  let icard = ref 0.0 in
-  let ucard = ref 0.0 in
-  let len1 = BA1.dim fp1.indexes in
-  let len2 = BA1.dim fp2.indexes in
-  let i = ref 0 in
-  let j = ref 0 in
-  while !i < len1 && !j < len2 do
-    (* unsafe *)
-    let k1 = BA1.unsafe_get fp1.indexes !i in
-    let v1 = BA1.unsafe_get fp1.values  !i in
-    let k2 = BA1.unsafe_get fp2.indexes !j in
-    let v2 = BA1.unsafe_get fp2.values  !j in
-    (* process keys in increasing order *)
-    if k1 < k2 then
-      (ucard := !ucard +. v1;
-       incr i)
-    else if k2 < k1 then
-      (ucard := !ucard +. v2;
-       incr j)
-    else (* k1 = k2 *)
-    if v1 <= v2 then
-      (icard := !icard +. v1;
-       ucard := !ucard +. v2;
-       incr i;
-       incr j)
-    else
-      (icard := !icard +. v2;
-       ucard := !ucard +. v1;
-       incr i;
-       incr j)
-  done;
-  while !i < len1 do (* finish fp1; unsafe *)
-    ucard := !ucard +. (BA1.unsafe_get fp1.values !i);
-    incr i
-  done;
-  while !j < len2 do (* finish fp2; unsafe *)
-    ucard := !ucard +. (BA1.unsafe_get fp2.values !j);
-    incr j
-  done;
-  if !icard = 0.0 then
-    0.0 (* NaN protection: ucard=0 --> icard=0 *)
-  else
-    !icard /. !ucard
-
-let tani_dist x y =
-  1.0 -. (tanimoto x y)
-
 module Bst_point = struct
-  type t = string * sparse_float_fp
-  let dist = tani_dist
+  type t = string * Common.sparse_float_fp
+  let dist = Common.tani_dist
 end
 
 module BST = Bst.Bisec_tree.Make(Bst_point)
@@ -223,27 +98,6 @@ let decode_mode maybe_input_fn maybe_db_fn maybe_query_fn maybe_queries_fn =
 let multiple_queries_asked = function
   | Multiple_queries _ -> true
   | _ -> false
-
-let parse_one verbose cutoff dx nb_dx input: string * sparse_float_fp =
-  let cand_ph4_mol = Ph4.read_one_ph4_encoded_molecule input in
-  let encoded = Ph4.encode verbose cutoff dx cand_ph4_mol in
-  freeze nb_dx encoded
-
-let parse_all verbose cutoff dx nb_dx input_fn =
-  LO.with_in_file input_fn (fun input ->
-      let res, exn =
-        L.unfold_exn (fun () ->
-            parse_one verbose cutoff dx nb_dx input
-          ) in
-      assert(exn = End_of_file);
-      res
-    )
-
-let read_one_bin input: string * sparse_float_fp =
-  Marshal.from_channel input
-
-let write_one_bin output (x: string * sparse_float_fp): unit =
-  Marshal.(to_channel output x [No_sharing])
 
 let parse_score_line line =
   try Scanf.sscanf line "%f %s" (fun score name -> (score, name))
@@ -398,7 +252,7 @@ let main () =
                let encoded =
                  Ph4.encode verbose cutoff dx
                    (Ph4.parse_one_ph4_encoded_molecule name_lines) in
-               sprintf_code nb_dx encoded)
+               Common.sprintf_code nb_dx encoded)
            ~mux:(fun line ->
                output_string output line;
                incr mol_count)
@@ -417,7 +271,7 @@ let main () =
            (Some (open_out_bin bin_tap_fn), None) in
      let queries =
        assert(S.ends_with queries_fn ".ph4");
-       A.of_list (parse_all verbose cutoff dx nb_dx queries_fn) in
+       A.of_list (Common.parse_all verbose cutoff dx nb_dx queries_fn) in
      let num_queries = A.length queries in
      Log.info "%d queries in %s" num_queries queries_fn;
      assert(num_queries >= 1);
@@ -440,11 +294,11 @@ let main () =
            assert(S.ends_with db_fn ".ph4");
            LO.with_infile_outfile db_fn output_fn (fun input scores_out ->
                let reader = match maybe_tap_in with
-                 | None -> (fun () -> parse_one verbose cutoff dx nb_dx input)
-                 | Some bin_tap_in -> (fun () -> read_one_bin bin_tap_in) in
+                 | None -> (fun () -> Common.parse_one verbose cutoff dx nb_dx input)
+                 | Some bin_tap_in -> (fun () -> Common.read_one_bin bin_tap_in) in
                let writer = match maybe_tap_out with
                  | None -> (fun _x -> ())
-                 | Some bin_out -> write_one_bin bin_out in
+                 | Some bin_out -> Common.write_one_bin bin_out in
                let name_scores = ref [] in
                let to_index = ref [] in
                try
@@ -454,9 +308,9 @@ let main () =
                       to_index := cand :: !to_index
                    );
                    writer cand;
-                   let scores = A.map (tanimoto cand) queries in
+                   let scores = A.map (Common.tanimoto cand) queries in
                    let score = A.max scores in (* MAX consensus *)
-                   name_scores := (is_active cand_name, score) :: !name_scores;
+                   name_scores := (Common.is_active cand_name, score) :: !name_scores;
                    fprintf scores_out "%f %s\n" score cand_name;
                    incr mol_count
                  done
@@ -485,7 +339,7 @@ let main () =
                multi_conf_post_proc_scores_fn output_fn;
                let score_labels_a =
                  let score_labels = LO.map output_fn parse_score_line in
-                 A.map (fun (score, name) -> (is_active name, score))
+                 A.map (fun (score, name) -> (Common.is_active name, score))
                    (A.of_list score_labels) in
                Common.performance_metrics
                  maybe_roc_curve_fn db_fn score_labels_a cutoff dx
