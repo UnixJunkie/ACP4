@@ -1,6 +1,13 @@
 ;; installed executables / public targets
+
+; (executables
+;   (names acp4 scissors)
+;   (public_names acp4 acp4_scissors)
+;   (modules ph4 acp4 gnuplot common sdf_3D scissors)
+;   (libraries batteries dolog minicli parany vector3 line_oriented cpm bst))
+
 (executables
   (names acp4 scissors MST)
   (public_names acp4 acp4_scissors acp4_mst)
   (modules ph4 acp4 gnuplot common sdf_3D scissors MST)
-  (libraries batteries dolog minicli parany vector3 line_oriented cpm bst))
+  (libraries batteries dolog minicli parany vector3 line_oriented cpm bst ocamlgraph molenc))
