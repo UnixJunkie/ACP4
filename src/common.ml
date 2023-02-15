@@ -136,7 +136,7 @@ let freeze nb_dx (name, encoded): (string * sparse_float_fp) =
   (name, { indexes = int32_array_of_list   (L.rev !idxs) ;
            values  = float32_array_of_list (L.rev !vals) })
 
-let tanimoto (_l1, fp1) (_l2, fp2) =
+let tanimoto' fp1 fp2 =
   let icard = ref 0.0 in
   let ucard = ref 0.0 in
   let len1 = BA1.dim fp1.indexes in
@@ -180,6 +180,12 @@ let tanimoto (_l1, fp1) (_l2, fp2) =
     0.0 (* NaN protection: ucard=0 --> icard=0 *)
   else
     !icard /. !ucard
+
+let tanimoto (_l1, fp1) (_l2, fp2) =
+  tanimoto' fp1 fp2
+
+let tani_dist' x y =
+  1.0 -. (tanimoto' x y)
 
 let tani_dist x y =
   1.0 -. (tanimoto x y)
