@@ -96,10 +96,12 @@ let mst_edges_to_dot fn names edges =
         assert(0 <= red && red <= 255 &&
                0 <= green && green <= 255 &&
                0 <= blue && blue <= 255);
-        fprintf out "\"%d\" [label=\"\" style=\"filled\" \
-                     color=\"#%02x%02x%02x\" \
-                     image=\"pix/%s.png\"]\n"
-          i red green blue name
+        (* fprintf out "\"%d\" [label=\"\" style=\"filled\" \ *)
+        (*              color=\"#%02x%02x%02x\" \ *)
+        (*              image=\"pix/%s.png\"]\n" *)
+        fprintf out "\"%d\" [label=\"%s\" style=\"filled\" \
+                     color=\"#%02x%02x%02x\"]\n"
+          i name red green blue
       done;
       L.iter (fun e ->
           fprintf out "%d -- %d [label=\"%.2f\"]\n"
@@ -122,18 +124,24 @@ let main () =
   if argc = 1 then
     (eprintf "usage:\n\
               %s\n  \
-              -i <filename>: encode molecules file\n  \
-              -o <filename>: output MST to dot file\n  \
-              [-go <filename>]: output fully connected graph to dot file\n  \
+              -i <filename.ph4>: input file\n  \
+              -o <filename.dot>: output MST to dot file\n  \
+              [-go <filename.dot>]: output fully connected graph to dot file\n  \
               [-np <int>]: maximum number of CPU cores (default=1)\n  \
-              [-cs <int>]: parallel job chunk size (default=1)\n"
-       Sys.argv.(0);
+              [-cs <int>]: parallel job chunk size (default=1)\n  \
+              [--BS]: optimal defaults for binding-sites (ignores -c and -dx)\n  \
+              [-c <float>]: cutoff distance (default=%.2f)\n  \
+              [-dx <float>]: radial discretization step (default=%g)\n  \
+              [-v]: verbose/debug mode\n"
+       Sys.argv.(0)
+       Common.Ligand_defaults.radial_cutoff
+       Common.Ligand_defaults.dx;
      exit 1);
   let input_fn = CLI.get_string ["-i"] args in
   let output_fn = CLI.get_string ["-o"] args in
   let maybe_full_graph_fn = CLI.get_string_opt ["-go"] args in
   let nprocs = CLI.get_int_def ["-np"] args 1 in
-  let csize = CLI.get_int_def ["-c"] args 1 in
+  let csize = CLI.get_int_def ["-cs"] args 1 in
   let verbose = CLI.get_set_bool ["-v"] args in
   let binding_site_mode = CLI.get_set_bool ["--BS"] args in
   let cutoff =
