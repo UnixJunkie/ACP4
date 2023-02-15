@@ -66,18 +66,6 @@ let index_fps nprocs db_fn chunk_size fps =
     ~work:index_chunk
     ~mux:(fun () -> ())
 
-module Ligand_defaults = struct
-  let radial_cutoff = 5.0
-  let dx = 0.5
-  let bst_chunk_size = 100_000
-end
-
-(* protein Binding-Sites *)
-module BS_defaults = struct
-  let radial_cutoff = 40.0
-  let dx = 0.9
-end
-
 type mode =
   (* default: ph4 to liblinear classification format *)
   | Encode of string
@@ -191,9 +179,9 @@ let main () =
               load optimal defaults for binding-sites (ignores -c and -dx)\n  \
               [-v]: verbose/debug mode\n"
        Sys.argv.(0)
-       Ligand_defaults.bst_chunk_size
-       Ligand_defaults.radial_cutoff
-       Ligand_defaults.dx;
+       Common.Ligand_defaults.bst_chunk_size
+       Common.Ligand_defaults.radial_cutoff
+       Common.Ligand_defaults.dx;
      exit 1);
   let verbose = CLI.get_set_bool ["-v"] args in
   if verbose then Log.(set_log_level DEBUG);
@@ -206,18 +194,18 @@ let main () =
   let nprocs = CLI.get_int_def ["-np"] args 1 in
   let csize = CLI.get_int_def ["-csize"] args 1 in
   let bst_chunk_size =
-    CLI.get_int_def ["-s"] args Ligand_defaults.bst_chunk_size in
+    CLI.get_int_def ["-s"] args Common.Ligand_defaults.bst_chunk_size in
   let binding_site_mode = CLI.get_set_bool ["--BS"] args in
   let cutoff =
     CLI.get_float_def ["-c"] args
       (if binding_site_mode
-       then BS_defaults.radial_cutoff
-       else Ligand_defaults.radial_cutoff) in
+       then Common.BS_defaults.radial_cutoff
+       else Common.Ligand_defaults.radial_cutoff) in
   let dx =
     CLI.get_float_def ["-dx"] args
       (if binding_site_mode
-       then BS_defaults.dx
-       else Ligand_defaults.dx) in
+       then Common.BS_defaults.dx
+       else Common.Ligand_defaults.dx) in
   let no_tap = CLI.get_set_bool ["--no-tap"] args in
   let multi_conf = CLI.get_set_bool ["--confs"] args in
   let quick = CLI.get_set_bool ["--quick"] args in

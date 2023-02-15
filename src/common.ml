@@ -204,3 +204,15 @@ let read_one_bin input: string * sparse_float_fp =
 
 let write_one_bin output (x: string * sparse_float_fp): unit =
   Marshal.(to_channel output x [No_sharing])
+
+module Ligand_defaults = struct
+  let radial_cutoff = 5.0
+  let dx = 0.5
+  let bst_chunk_size = 100_000
+end
+
+(* protein Binding-Sites *)
+module BS_defaults = struct
+  let radial_cutoff = 40.0
+  let dx = 0.9
+end
