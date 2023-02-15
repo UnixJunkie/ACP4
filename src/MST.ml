@@ -14,11 +14,10 @@ open Printf
 
 module A = BatArray
 module CLI = Minicli.CLI
-module FpMol = Molenc.FpMol
 module Ht = Hashtbl
 module L = BatList
+module LO = Line_oriented
 module Log = Dolog.Log
-module Utls = Molenc.Utls
 
 (* Undirected graph with integer labels on vertices and float labels (weights)
    on edges *)
@@ -58,7 +57,7 @@ module Kruskal = Graph.Kruskal.Make(G)(W)
 
 (* write graph to file in graphviz dot format *)
 let graph_to_dot fn g =
-  Utls.with_out_file fn (fun out ->
+  LO.with_out_file fn (fun out ->
       fprintf out "graph all_to_all {\n";
       G.iter_edges_e (fun e ->
           fprintf out "%d -- %d [label=\"%.2f\"]\n"
@@ -67,34 +66,36 @@ let graph_to_dot fn g =
       fprintf out "}\n";
     )
 
-(* node color *)
-let rgb_triplet min_pIC50 delta_pIC50 ic50 =
-  let percent = ceil (100.0 *. ((ic50 -. min_pIC50) /. delta_pIC50)) in
-  let _fractional, integral = modf percent in
-  let key = integral /. 100.0 in
-  let red_f, green_f, blue_f = Ht.find Palette.ht key in
-  (int_of_float (ceil (255.0 *. red_f)),
-   int_of_float (ceil (255.0 *. green_f)),
-   int_of_float (ceil (255.0 *. blue_f)))
+(* (\* node color *\) *)
+(* let rgb_triplet min_pIC50 delta_pIC50 ic50 = *)
+(*   let percent = ceil (100.0 *. ((ic50 -. min_pIC50) /. delta_pIC50)) in *)
+(*   let _fractional, integral = modf percent in *)
+(*   let key = integral /. 100.0 in *)
+(*   let red_f, green_f, blue_f = Ht.find Palette.ht key in *)
+(*   (int_of_float (ceil (255.0 *. red_f)), *)
+(*    int_of_float (ceil (255.0 *. green_f)), *)
+(*    int_of_float (ceil (255.0 *. blue_f))) *)
 
 (* write the MST edges to file in dot format *)
-let mst_edges_to_dot fn all_mols edges =
-  let pIC50s = A.map FpMol.get_value all_mols in
-  let names = A.map FpMol.get_name all_mols in
-  let min_pIC50, max_pIC50 = A.min_max pIC50s in
-  let delta_pIC50 = max_pIC50 -. min_pIC50 in
-  Log.info "pIC50: (min,max,delta): %g %g %g" min_pIC50 max_pIC50 delta_pIC50;
-  Utls.with_out_file fn (fun out ->
+let mst_edges_to_dot fn names edges =
+  (* let pIC50s = A.map FpMol.get_value all_mols in *)
+  (* let names = A.map FpMol.get_name all_mols in *)
+  (* let min_pIC50, max_pIC50 = A.min_max pIC50s in *)
+  (* let delta_pIC50 = max_pIC50 -. min_pIC50 in *)
+  (* Log.info "pIC50: (min,max,delta): %g %g %g" min_pIC50 max_pIC50 delta_pIC50; *)
+  LO.with_out_file fn (fun out ->
       fprintf out "graph min_span_tree {\n";
-      let nb_nodes = A.length pIC50s in
+      let nb_nodes = A.length names in
       for i = 0 to nb_nodes - 1 do
-        let ic50 = pIC50s.(i) in
+        (* let ic50 = pIC50s.(i) in *)
         let name = names.(i) in
-        (* color molecule's node *)
-        let red, green, blue = rgb_triplet min_pIC50 delta_pIC50 ic50 in
-        assert(Utls.in_bounds 0 red   255 &&
-               Utls.in_bounds 0 green 255 &&
-               Utls.in_bounds 0 blue  255);
+        (* color node *)
+        (* FBR: later; use one color per EC class *)
+        (* let red, green, blue = rgb_triplet min_pIC50 delta_pIC50 ic50 in *)
+        let red, green, blue = 255, 255, 255 in
+        assert(0 <= red && red <= 255 &&
+               0 <= green && green <= 255 &&
+               0 <= blue && blue <= 255);
         fprintf out "\"%d\" [label=\"\" style=\"filled\" \
                      color=\"#%02x%02x%02x\" \
                      image=\"pix/%s.png\"]\n"
@@ -133,9 +134,23 @@ let main () =
   let maybe_full_graph_fn = CLI.get_string_opt ["-go"] args in
   let nprocs = CLI.get_int_def ["-np"] args 1 in
   let csize = CLI.get_int_def ["-c"] args 1 in
-  CLI.finalize ();
+  let verbose = CLI.get_set_bool ["-v"] args in
+  let binding_site_mode = CLI.get_set_bool ["--BS"] args in
+  let cutoff =
+    CLI.get_float_def ["-c"] args
+      (if binding_site_mode
+       then Common.BS_defaults.radial_cutoff
+       else Common.Ligand_defaults.radial_cutoff) in
+  let dx =
+    CLI.get_float_def ["-dx"] args
+      (if binding_site_mode
+       then Common.BS_defaults.dx
+       else Common.Ligand_defaults.dx) in
+  CLI.finalize (); (* ------------------------------------------------------ *)
+  let nb_dx = 1 + BatFloat.round_to_int (cutoff /. dx) in
   Log.info "reading molecules...";
-  let all_mols = A.of_list (FpMol.molecules_of_file input_fn) in
+  let names, all_mols =
+    A.split (A.of_list (Common.parse_all verbose cutoff dx nb_dx input_fn)) in
   let nb_mols = A.length all_mols in
   Log.info "read %d" nb_mols;
   let g = G.create ~size:nb_mols () in
@@ -144,10 +159,10 @@ let main () =
     G.add_vertex g i
   done;
   (* compute Gram matrix in // *)
-  let matrix = A.init nb_mols (fun _ -> A.create_float nb_mols) in
+  let matrix = A.make_matrix nb_mols nb_mols 0.0 in
   Log.info "Gram matrix initialization...";
-  Gram.initialize_matrix nprocs csize all_mols matrix;
-  Gram.print_corners matrix;
+  Molenc.Gram.initialize_matrix Common.tani_dist' nprocs csize all_mols matrix;
+  Molenc.Gram.print_corners matrix;
   Log.info "Adding edges to graph...";
   (* add all edges to graph *)
   let disconnected = ref 0 in
@@ -169,12 +184,12 @@ let main () =
   printf "\n%!";
   (if !disconnected > 0 then
      Log.info "disconnected molecules: %d" !disconnected);
-  Utls.may_apply (fun fn -> graph_to_dot fn g) maybe_full_graph_fn;
+  BatOption.may (fun fn -> graph_to_dot fn g) maybe_full_graph_fn;
   (* MST *)
   Log.info "MST...";
   let mst = minimum_spanning_tree g in
   (* dump to file *)
   Log.info "writing file %s ..." output_fn;
-  mst_edges_to_dot output_fn all_mols mst
+  mst_edges_to_dot output_fn names mst
 
 let () = main ()
