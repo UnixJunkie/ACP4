@@ -39,8 +39,8 @@ end
 
 (* JCF said we should use Graph.Imperative.Matrix.Graph for performance reasons
    because our graphs are dense
-   JS said we should use Prim's algorithm instead of Kruskal; also for performance
-   reasons since we have a dense graph *)
+   JS said we should use Prim's algorithm instead of Kruskal;
+   also for performance reasons since we have a dense graph *)
 module G = Graph.Imperative.Graph.ConcreteLabeled(Node)(Edge)
 
 module W = struct
@@ -117,10 +117,12 @@ let main () =
               %s\n  \
               -i <filename.ph4>: input file\n  \
               -o <filename.dot>: output MST to dot file\n  \
-              [-go <filename.dot>]: output fully connected graph to dot file\n  \
+              [-go <filename.dot>]: output fully connected graph \
+              to dot file\n  \
               [-np <int>]: maximum number of CPU cores (default=1)\n  \
               [-cs <int>]: parallel job chunk size (default=1)\n  \
-              [--BS]: optimal defaults for binding-sites (ignores -c and -dx)\n  \
+              [--BS]: optimal defaults for binding-sites \
+              (ignores -c and -dx)\n  \
               [-c <float>]: cutoff distance (default=%.2f)\n  \
               [-dx <float>]: radial discretization step (default=%g)\n  \
               [-v]: verbose/debug mode\n"
