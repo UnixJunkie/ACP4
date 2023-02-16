@@ -3,9 +3,10 @@
    5-1-5 Kashiwa-no-ha, Kashiwa-shi, Chiba-ken, 277-8561, Japan.
 
    Minimum Spanning Tree (MST) over a dataset's Gram matrix.
-   Nodes are connected all to all (undirected graph).
+   Nodes are connected if passing some z-score filtering (undirected graph).
    The edge weight between two nodes is the Tanimoto distance between them.
 
+   Kind of inspired by
    Probst, D., & Reymond, J. L. (2020).
    Visualization of very large high-dimensional data sets as minimum spanning
    trees. Journal of Cheminformatics, 12(1), 1-13. *)
@@ -109,11 +110,11 @@ let tanimoto_mean_std n a =
   Common.(average arr, stddev arr)
 
 (* FBR: don't add node to graph if it is not connected *)
-(* FBR: add z option *)
 
 let main () =
   Log.(set_log_level INFO);
   Log.color_on ();
+  let z_default = 2.0 in
   let argc, args = CLI.init () in
   if argc = 1 then
     (eprintf "usage:\n\
@@ -128,10 +129,13 @@ let main () =
               (ignores -c and -dx)\n  \
               [-c <float>]: cutoff distance (default=%.2f)\n  \
               [-dx <float>]: radial discretization step (default=%g)\n  \
+              [-z <float>]: number of std-devs \
+              (for filtering; default=%.1f)\n  \
               [-v]: verbose/debug mode\n"
        Sys.argv.(0)
        Common.Ligand_defaults.radial_cutoff
-       Common.Ligand_defaults.dx;
+       Common.Ligand_defaults.dx
+       z_default;
      exit 1);
   let input_fn = CLI.get_string ["-i"] args in
   let output_fn = CLI.get_string ["-o"] args in
@@ -150,6 +154,7 @@ let main () =
       (if binding_site_mode
        then Common.BS_defaults.dx
        else Common.Ligand_defaults.dx) in
+  let z = CLI.get_float_def ["-z"] args z_default in
   CLI.finalize (); (* ------------------------------------------------------ *)
   let nb_dx = 1 + BatFloat.round_to_int (cutoff /. dx) in
   Log.info "reading molecules...";
@@ -159,8 +164,7 @@ let main () =
   let tani_mean, tani_std = tanimoto_mean_std 1000 all_mols in
   Log.info "T_mean+/-s: %f+/-%f" tani_mean tani_std;
   let tani_dist_mean = 1.0 -. tani_mean in
-  (* FBR: hard-coded constant; the user might want 3.0 to prune more *)
-  let threshold = tani_dist_mean -. (2.0 *. tani_std) in
+  let threshold = tani_dist_mean -. (z *. tani_std) in
   Log.info "threshold: %f" threshold;
   Log.info "read %d" nb_mols;
   let g = G.create ~size:nb_mols () in
