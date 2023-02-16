@@ -108,6 +108,9 @@ let tanimoto_mean_std n a =
       ) in
   Common.(average arr, stddev arr)
 
+(* FBR: don't add node to graph if it is not connected *)
+(* FBR: add z option *)
+
 let main () =
   Log.(set_log_level INFO);
   Log.color_on ();
@@ -153,6 +156,12 @@ let main () =
   let names, all_mols =
     A.split (A.of_list (Common.parse_all verbose cutoff dx nb_dx input_fn)) in
   let nb_mols = A.length all_mols in
+  let tani_mean, tani_std = tanimoto_mean_std 1000 all_mols in
+  Log.info "T_mean+/-s: %f+/-%f" tani_mean tani_std;
+  let tani_dist_mean = 1.0 -. tani_mean in
+  (* FBR: hard-coded constant; the user might want 3.0 to prune more *)
+  let threshold = tani_dist_mean -. (2.0 *. tani_std) in
+  Log.info "threshold: %f" threshold;
   Log.info "read %d" nb_mols;
   let g = G.create ~size:nb_mols () in
   (* add all nodes to graph *)
@@ -166,23 +175,25 @@ let main () =
   Molenc.Gram.print_corners matrix;
   Log.info "Adding edges to graph...";
   (* add all edges to graph *)
+  let connected = ref 0 in
   let disconnected = ref 0 in
   for i = 0 to nb_mols - 1 do
-    (* WARNING: we don't initialize the diagonal
-       (it is supposed to be all 0s) *)
+    (* the diagonal is ignored; all 0s *)
     for j = i + 1 to nb_mols - 1 do
       let w = matrix.(i).(j) in
-      if w = 1.0 then
+      if w > threshold then
         incr disconnected
       else
         let edge = G.E.create i w j in
+        incr connected;
         G.add_edge_e g edge
     done;
     printf "done: %d/%d\r%!" (i + 1) nb_mols;
   done;
   printf "\n%!";
-  (if !disconnected > 0 then
-     Log.info "disconnected molecules: %d" !disconnected);
+  Log.info "connected: %d (fraction: %f)"
+    !connected ((float !connected) /. float (!connected + !disconnected));
+  Log.info "disconnected: %d" !disconnected;
   BatOption.may (fun fn -> graph_to_dot fn g) maybe_full_graph_fn;
   (* MST *)
   Log.info "MST...";
