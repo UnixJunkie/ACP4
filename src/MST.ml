@@ -16,6 +16,7 @@ open Printf
 module A = BatArray
 module CLI = Minicli.CLI
 module Ht = Hashtbl
+module IntSet = BatSet.Int
 module L = BatList
 module LO = Line_oriented
 module Log = Dolog.Log
@@ -69,12 +70,19 @@ let graph_to_dot fn g =
 
 (* write the MST edges to file in dot format *)
 let mst_edges_to_dot fn names edges =
+  (* list connected nodes *)
+  let nodes_set = ref IntSet.empty in
+  L.iter (fun e ->
+      let src = G.E.src e in
+      let dst = G.E.dst e in
+      nodes_set := IntSet.add src (IntSet.add dst !nodes_set)
+    ) edges;
+  Log.info "non isolated nodes: %d" (IntSet.cardinal !nodes_set);
   LO.with_out_file fn (fun out ->
       fprintf out "graph min_span_tree {\n";
       let nb_nodes = A.length names in
       for i = 0 to nb_nodes - 1 do
         (* let ic50 = pIC50s.(i) in *)
-        let name = names.(i) in
         (* node color *)
         (* FBR: maybe later; use one color per EC class? *)
         (* let red, green, blue = rgb_triplet min_pIC50 delta_pIC50 ic50 in *)
@@ -82,10 +90,12 @@ let mst_edges_to_dot fn names edges =
         assert(0 <= red && red <= 255 &&
                0 <= green && green <= 255 &&
                0 <= blue && blue <= 255);
-        fprintf out "\"%d\" [label=\"\" style=\"filled\" \
-                     color=\"#%02x%02x%02x\" \
-                     image=\"pix/%s_lig.png\"]\n"
-          i red green blue name
+        if IntSet.mem i !nodes_set then
+          let name = names.(i) in          
+          fprintf out "\"%d\" [label=\"\" style=\"filled\" \
+                       color=\"#%02x%02x%02x\" \
+                       image=\"pix/%s_lig.png\"]\n"
+            i red green blue name
       done;
       L.iter (fun e ->
           fprintf out "%d -- %d [label=\"%.2f\"]\n"
@@ -108,24 +118,6 @@ let tanimoto_mean_std n a =
         Common.tanimoto' a.(i) a.(j)
       ) in
   Common.(average arr, stddev arr)
-
-exception Found
-
-(* test if node is close enough to at least another one *)
-let is_connected arr threshold i =
-  let a = arr.(i) in
-  let n = A.length a in
-  try
-    for j = 0 to i - 1 do
-      if a.(j) < threshold then
-        raise Found
-    done;
-    for j = i + 1 to n - 1 do
-      if a.(j) < threshold then
-        raise Found
-    done;
-    false
-  with Found -> true
 
 let main () =
   Log.(set_log_level INFO);
@@ -183,17 +175,17 @@ let main () =
   let threshold = tani_dist_mean -. (z *. tani_std) in
   Log.info "threshold: %f" threshold;
   Log.info "read %d" nb_mols;
-  let g = G.create ~size:nb_mols () in
-  (* add all nodes to graph *)
-  for i = 0 to nb_mols - 1 do
-    G.add_vertex g i
-  done;
   (* compute Gram matrix in // *)
   let matrix = A.make_matrix nb_mols nb_mols 0.0 in
   Log.info "Gram matrix initialization...";
   Molenc.Gram.initialize_matrix Common.tani_dist' nprocs csize all_mols matrix;
   Molenc.Gram.print_corners matrix;
-  Log.info "Adding edges to graph...";
+  Log.info "Adding nodes and edges to graph...";
+  let g = G.create ~size:nb_mols () in
+  (* add all nodes to graph *)
+  for i = 0 to nb_mols - 1 do
+    G.add_vertex g i
+  done;
   (* add all edges to graph *)
   let connected = ref 0 in
   let disconnected = ref 0 in
