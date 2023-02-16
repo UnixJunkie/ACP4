@@ -109,7 +109,23 @@ let tanimoto_mean_std n a =
       ) in
   Common.(average arr, stddev arr)
 
-(* FBR: don't add node to graph if it is not connected *)
+exception Found
+
+(* test if node is close enough to at least another one *)
+let is_connected arr threshold i =
+  let a = arr.(i) in
+  let n = A.length a in
+  try
+    for j = 0 to i - 1 do
+      if a.(j) < threshold then
+        raise Found
+    done;
+    for j = i + 1 to n - 1 do
+      if a.(j) < threshold then
+        raise Found
+    done;
+    false
+  with Found -> true
 
 let main () =
   Log.(set_log_level INFO);
