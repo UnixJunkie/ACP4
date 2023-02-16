@@ -222,3 +222,16 @@ module BS_defaults = struct
   let radial_cutoff = 40.0
   let dx = 0.9
 end
+
+let average (a: float array): float =
+  (A.fsum a) /. (float (A.length a))
+
+let stddev (a: float array): float =
+  let sqr x =
+    x *. x in
+  let n, sx, sx2 =
+    A.fold_left
+      (fun (n, sx, sx2) x -> (succ n, sx +. x, sx2 +. (sqr x)))
+      (0, 0., 0.) a
+  in
+  sqrt ((sx2 -. (sqr sx) /. (float n)) /. (float n))
