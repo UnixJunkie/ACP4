@@ -190,12 +190,10 @@ let main () =
       if w = 1.0 then
         incr disconnected
       else
-        (* T_dist = 1.0 means the two molecules have nothing in common *)
-        (* So, the default molecules "linking threshold" is 1.0. *)
         let edge = G.E.create i w j in
         G.add_edge_e g edge
     done;
-    printf "done: %d/%d\r%!" (i + 1) nb_mols;
+    printf "done: %d/%d\r" (i + 1) nb_mols;
   done;
   printf "\n%!";
   (if !disconnected > 0 then
