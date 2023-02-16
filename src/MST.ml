@@ -66,42 +66,25 @@ let graph_to_dot fn g =
       fprintf out "}\n";
     )
 
-(* (\* node color *\) *)
-(* let rgb_triplet min_pIC50 delta_pIC50 ic50 = *)
-(*   let percent = ceil (100.0 *. ((ic50 -. min_pIC50) /. delta_pIC50)) in *)
-(*   let _fractional, integral = modf percent in *)
-(*   let key = integral /. 100.0 in *)
-(*   let red_f, green_f, blue_f = Ht.find Palette.ht key in *)
-(*   (int_of_float (ceil (255.0 *. red_f)), *)
-(*    int_of_float (ceil (255.0 *. green_f)), *)
-(*    int_of_float (ceil (255.0 *. blue_f))) *)
-
 (* write the MST edges to file in dot format *)
 let mst_edges_to_dot fn names edges =
-  (* let pIC50s = A.map FpMol.get_value all_mols in *)
-  (* let names = A.map FpMol.get_name all_mols in *)
-  (* let min_pIC50, max_pIC50 = A.min_max pIC50s in *)
-  (* let delta_pIC50 = max_pIC50 -. min_pIC50 in *)
-  (* Log.info "pIC50: (min,max,delta): %g %g %g" min_pIC50 max_pIC50 delta_pIC50; *)
   LO.with_out_file fn (fun out ->
       fprintf out "graph min_span_tree {\n";
       let nb_nodes = A.length names in
       for i = 0 to nb_nodes - 1 do
         (* let ic50 = pIC50s.(i) in *)
         let name = names.(i) in
-        (* color node *)
-        (* FBR: later; use one color per EC class *)
+        (* node color *)
+        (* FBR: maybe later; use one color per EC class? *)
         (* let red, green, blue = rgb_triplet min_pIC50 delta_pIC50 ic50 in *)
         let red, green, blue = 255, 255, 255 in
         assert(0 <= red && red <= 255 &&
                0 <= green && green <= 255 &&
                0 <= blue && blue <= 255);
-        (* fprintf out "\"%d\" [label=\"\" style=\"filled\" \ *)
-        (*              color=\"#%02x%02x%02x\" \ *)
-        (*              image=\"pix/%s.png\"]\n" *)
-        fprintf out "\"%d\" [label=\"%s\" style=\"filled\" \
-                     color=\"#%02x%02x%02x\"]\n"
-          i name red green blue
+        fprintf out "\"%d\" [label=\"\" style=\"filled\" \
+                     color=\"#%02x%02x%02x\" \
+                     image=\"pix/%s_lig.png\"]\n"
+          i red green blue name
       done;
       L.iter (fun e ->
           fprintf out "%d -- %d [label=\"%.2f\"]\n"
@@ -193,7 +176,7 @@ let main () =
         let edge = G.E.create i w j in
         G.add_edge_e g edge
     done;
-    printf "done: %d/%d\r" (i + 1) nb_mols;
+    printf "done: %d/%d\r%!" (i + 1) nb_mols;
   done;
   printf "\n%!";
   (if !disconnected > 0 then
