@@ -113,9 +113,17 @@ let mst_edges_to_dot fn names edges =
 let minimum_spanning_tree g =
   Kruskal.spanningtree g
 
-(* TODO *)
-(* FBR: we could use a threshold distance: if two molecules are further than
- *      this distance, we know they are not related (e.g. using DBBAD) *)
+(* mean and stddev from n samples Tanimoto *)
+let tanimoto_mean_std n a =
+  let rng = Random.State.make_self_init () in
+  let len = A.length a in
+  let arr =
+    A.init n (fun _i ->
+        let i = Random.State.int rng len in
+        let j = Random.State.int rng len in
+        Common.tanimoto' a.(i) a.(j)
+      ) in
+  Common.(average arr, stddev arr)
 
 let main () =
   Log.(set_log_level INFO);
