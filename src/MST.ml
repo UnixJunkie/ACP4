@@ -169,7 +169,7 @@ let main () =
   let names, all_mols =
     A.split (A.of_list (Common.parse_all verbose cutoff dx nb_dx input_fn)) in
   let nb_mols = A.length all_mols in
-  let tani_mean, tani_std = tanimoto_mean_std 1000 all_mols in
+  let tani_mean, tani_std = tanimoto_mean_std 10_000 all_mols in
   Log.info "T_mean+/-s: %f+/-%f" tani_mean tani_std;
   let tani_dist_mean = 1.0 -. tani_mean in
   let threshold = tani_dist_mean -. (z *. tani_std) in
@@ -182,11 +182,11 @@ let main () =
   Molenc.Gram.print_corners matrix;
   Log.info "Adding nodes and edges to graph...";
   let g = G.create ~size:nb_mols () in
-  (* add all nodes to graph *)
+  (* add nodes to graph *)
   for i = 0 to nb_mols - 1 do
     G.add_vertex g i
   done;
-  (* add all edges to graph *)
+  (* add edges to graph *)
   let connected = ref 0 in
   let disconnected = ref 0 in
   for i = 0 to nb_mols - 1 do
