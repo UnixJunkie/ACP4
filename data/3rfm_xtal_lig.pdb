@@ -1,0 +1,30 @@
+REMARK Selection '(not protein) a...) and (not ion)'
+HETATM    1  N1  CFF A 330       9.174 -33.156 -31.881  1.00147.73           N  
+ANISOU    1  N1  CFF A 330        0      0      0      0      0      0       N  
+HETATM    2  C2  CFF A 330       9.511 -33.973 -32.948  1.00148.15           C  
+ANISOU    2  C2  CFF A 330        0      0      0      0      0      0       C  
+HETATM    3  C10 CFF A 330      10.180 -32.790 -30.862  1.00138.32           C  
+ANISOU    3  C10 CFF A 330        0      0      0      0      0      0       C  
+HETATM    4  C6  CFF A 330       7.880 -32.698 -31.748  1.00147.40           C  
+ANISOU    4  C6  CFF A 330        0      0      0      0      0      0       C  
+HETATM    5  N3  CFF A 330       8.560 -34.329 -33.882  1.00149.30           N  
+ANISOU    5  N3  CFF A 330        0      0      0      0      0      0       N  
+HETATM    6  O11 CFF A 330      10.781 -34.432 -33.079  1.00142.40           O  
+ANISOU    6  O11 CFF A 330        0      0      0      0      0      0       O  
+HETATM    7  C12 CFF A 330       8.923 -35.204 -35.004  1.00147.42           C  
+ANISOU    7  C12 CFF A 330        0      0      0      0      0      0       C  
+HETATM    8  C4  CFF A 330       7.287 -33.864 -33.735  1.00146.85           C  
+ANISOU    8  C4  CFF A 330        0      0      0      0      0      0       C  
+HETATM    9  C5  CFF A 330       6.925 -33.068 -32.699  1.00145.81           C  
+ANISOU    9  C5  CFF A 330        0      0      0      0      0      0       C  
+HETATM   10  N9  CFF A 330       6.240 -34.112 -34.550  1.00147.23           N  
+ANISOU   10  N9  CFF A 330        0      0      0      0      0      0       N  
+HETATM   11  O13 CFF A 330       7.552 -31.908 -30.705  1.00147.52           O  
+ANISOU   11  O13 CFF A 330        0      0      0      0      0      0       O  
+HETATM   12  N7  CFF A 330       5.617 -32.775 -32.828  1.00147.22           N  
+ANISOU   12  N7  CFF A 330        0      0      0      0      0      0       N  
+HETATM   13  C8  CFF A 330       5.235 -33.422 -33.954  1.00148.06           C  
+ANISOU   13  C8  CFF A 330        0      0      0      0      0      0       C  
+HETATM   14  C14 CFF A 330       4.727 -31.975 -31.994  1.00145.92           C  
+ANISOU   14  C14 CFF A 330        0      0      0      0      0      0       C  
+END                                                                             
