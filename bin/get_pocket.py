@@ -2,7 +2,7 @@
 
 # extract PDB lines corresponding to a user-provided pocket definition
 # you must use a conda environment w/ prody
-# a pocket is specified via a text file w/ only
+# a pocket is specified via a text file only made of
 # ^CHAIN:char<SPACE>RESNUM:int$ lines
 
 import os, sys
@@ -27,6 +27,14 @@ def load_pocket_definition(pocket_fn):
         res.append(chain_res)
     return res
 
+def group_by_chain(residues):
+    res = {}
+    for chain, resnum in residues:
+        prev = res.get(chain, [])
+        prev.append(resnum)
+        res[chain] = prev
+    return res
+
 # FBR: use proper CLI handling maybe one day
 #      or, at least usage message in case not enough params
 pdb_fn = sys.argv[1]
@@ -40,10 +48,12 @@ except:
     sys.exit(1)
 else:
     pocket_residues = load_pocket_definition(pocket_fn)
+    chain_residues = group_by_chain(pocket_residues)
     with open(output_fn, 'w') as output:
-        for pock_res in pocket_residues:
-            chain, resnum = pock_res
-            selection = 'protein and chain %c and resnum %d' % (chain, resnum)
+        for chain, residues in chain_residues.items():
+            resnums = list(map(str, residues))
+            resnums_str = ' '.join(resnums)
+            selection = 'protein and chain %c and resnum %s' % (chain, resnums_str)
             atoms = pdb.select(selection)
             if atoms:
                 writePDBStream(output, atoms)
