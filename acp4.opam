@@ -8,6 +8,7 @@ bug-reports: "https://github.com/UnixJunkie/ACP4/issues"
 build: ["dune" "build" "-p" name "-j" jobs]
 install: [
   ["cp" "bin/acp4_ph4.py" "%{bin}%/acp4_ph4.py"]
+  ["cp" "bin/acp4_get_pocket.py" "%{bin}%/acp4_get_pocket.py"]
 ]
 depends: [
   "batteries" {>= "3.3.0"}
