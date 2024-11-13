@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-# append a conformer number (like _1) to each molecule
+# append a conformer number (like _1) to each molecule in a .sdf file
+# 1st conformer is assigned _0
 
 import sys
 
