@@ -9,6 +9,7 @@ build: ["dune" "build" "-p" name "-j" jobs]
 install: [
   ["cp" "bin/acp4_ph4.py" "%{bin}%/acp4_ph4.py"]
   ["cp" "bin/acp4_get_pocket.py" "%{bin}%/acp4_get_pocket.py"]
+  ["cp" "bin/acp4_renum_conf.py" "%{bin}%/acp4_renum_conf.py"]
 ]
 depends: [
   "batteries" {>= "3.3.0"}
