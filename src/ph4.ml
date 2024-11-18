@@ -32,6 +32,9 @@ type molecule_ph4 = { name: string;
 (* a sparse float array *)
 type channels = (float IntMap.t) array
 
+let num_features m =
+  A.length m.features
+
 let feature_of_string = function
   | "ARO" -> ARO
   | "HYD" -> HYD
