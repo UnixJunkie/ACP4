@@ -13,6 +13,33 @@ module LO = Line_oriented
 module Log = Dolog.Log
 module V3 = Vector3
 
+let score_assignment _m1 _m2 _pairs =
+  failwith "not implemented yet"
+(* let error = 0.0 in *)
+(* failwith "not implemented yet"; *)
+(* error *)
+
+(* for each feature in [m1], find all possible assignments from [m2];
+   including no assignment (-1);
+   the smaller molecule is supposed to be [m1] *)
+let possible_assignments m1 m2 =
+  let n1 = Ph4.num_features m1 in
+  let n2 = Ph4.num_features m2 in
+  assert(n1 <= n2);
+  let res = ref [] in
+  for i = 0 to n1 - 1 do
+    let feat1 = m1.features.(i) in
+    (* no match is always a possibility *)    
+    let i_matches = ref [-1] in
+    for j = 0 to n2 - 1 do
+      let feat2 = m2.features.(j) in
+      if feat1 = feat2 then
+        i_matches := j :: !i_matches
+    done;
+    res := (i, !i_matches) :: !res
+  done;
+  !res
+
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
   Log.color_on ();
