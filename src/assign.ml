@@ -47,47 +47,48 @@ let score_assignment m1 m2 pairs' =
     ) dists1 dists2;
   (n, !error)
 
-(* for each feature in [m1], find all possible assignments in [m2];
-   including no assignment (-1);
-   the smallest molecule is supposed to be [m1] *)
-let possible_assignments (m1: Ph4.molecule_ph4) (m2: Ph4.molecule_ph4):
-  (int * int list) list =
-  let n1 = Ph4.num_features m1 in
-  let n2 = Ph4.num_features m2 in
-  (if n1 > n2 then
-     (Log.fatal "Assign.possible_assignments: n1 > n2: %d > %d" n1 n2;
-      exit 1)
-  );
-  let res = ref [] in
-  A.iteri (fun i feat1 ->
-      (* no match is always a possibility *)
-      let i_matches = ref [-1] in
-      A.iteri (fun j feat2 ->
-          if feat1 = feat2 then
-            i_matches := j :: !i_matches
-        ) m2.features;
-      res := (i, !i_matches) :: !res
-    ) m1.features;
-  !res
+(* which feature indexes in [m1] are compatible with
+   which feature indexes in [m2] *)
+let compatible_feats m1 m2 =
+  let all_feats = Ph4.[ARO; HYD; HBA; HBD; POS; NEG] in
+  L.fold_left (fun acc feat ->
+      let xs = ref [] in
+      let m1_feats = Ph4.get_features m1 in
+      A.iteri (fun i x ->
+          if feat = x then
+            xs := i :: !xs
+        ) m1_feats;
+      let ys = ref [] in
+      let m2_feats = Ph4.get_features m2 in
+      A.iteri (fun i x ->
+          if feat = x then
+            ys := i :: !ys
+        ) m2_feats;
+      let res = (!xs, !ys) in
+      if res <> ([], []) then
+        res :: acc
+      else
+        acc
+    ) [] all_feats
 
-let rm_from_assignments (j: int) rem =
-  L.map (fun ((i: int), js) -> (i, L.filter (fun j' -> j <> j') js)) rem
-
-(* return one assignment, along w/ the remaining possible ones *)
-let assign_one possible =
-  L.fold_left (fun (res, rem) (i, js) -> match js with
-      | [] -> (res, rem)
-      | j :: rest -> ((i, j) :: res,
-                      (i, rest) :: (rm_from_assignments j rem))
-    ) ([], []) possible
-
-let assign_all possibles =
+(* if [i] is assigned to [j] (i, j), then no one else can be assigned to [j] *)
+let assign_only_once l =
   let rec loop acc = function
     | [] -> acc
-    | l ->
-      let assigned, rem = assign_one l in
-      loop (assigned :: acc) rem in
-  loop [] possibles
+    | ((i: int), (j: int)) :: rest ->
+      let acc' =
+        let l' = (i, j) :: (L.filter (fun (_i', j') -> j <> j') rest) in
+        L.rev_append l' acc in
+      loop acc' rest in
+  loop [] l
+
+let all_possible_assignments compats =
+  let intermediate =
+    L.fold_left (fun acc (feats1, feats2) ->
+        let prod = L.cartesian_product feats1 feats2 in
+        (assign_only_once prod) :: acc
+      ) [] compats in
+  failwith "not implemented yet"
 
 let string_of_list to_str l =
   let strings = L.map to_str l in
@@ -120,13 +121,19 @@ let main () =
   Log.info "|ref|=%d" (Ph4.num_features reference);
   Log.info "|cand|=%d" (Ph4.num_features candidate);
   (* test assignments *)
-  let possible = possible_assignments reference candidate in
-  let all_assignments = assign_all possible in
+  let compats = compatible_feats reference candidate in
+  L.iter (fun (xs, ys) ->
+      Log.info "%s - %s"
+        (string_of_list string_of_int xs)
+        (string_of_list string_of_int ys)
+    ) compats;
+  let all_assignments = all_possible_assignments compats in
+  Log.warn "possible assignments: %d" (L.length all_assignments);
   L.iter (fun x ->
       let n, error = score_assignment reference candidate x in
       let score = (float n) /. error in
-      Printf.eprintf "score: %f N: %d %s\n"
+      Log.info "score: %f N: %d %s"
         score n (string_of_list string_of_int_pair x)
     ) all_assignments
-  
+
 let () = main ()
