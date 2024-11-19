@@ -86,6 +86,14 @@ let assign_all possibles =
       loop (assigned :: acc) rem in
   loop [] possibles
 
+let string_of_list to_str l =
+  let strings = L.map to_str l in
+  let body = String.concat "; " strings in
+  String.concat "" ["["; body; "]"]
+
+let string_of_int_pair (x, y) =
+  sprintf "(%d, %d)" x y
+
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
   Log.color_on ();
@@ -104,9 +112,17 @@ let main () =
   let ref_fn = CLI.get_string ["-r"] args in
   let cand_fn = CLI.get_string ["-c"] args in
   CLI.finalize (); (* ----------------------------------------------------- *)
-  let reference = LO.with_in_file ref_fn Ph4.read_one_ph4_encoded_molecule in
+  let reference = LO.with_in_file ref_fn  Ph4.read_one_ph4_encoded_molecule in
   let candidate = LO.with_in_file cand_fn Ph4.read_one_ph4_encoded_molecule in
   Log.info "|ref|=%d" (Ph4.num_features reference);
-  Log.info "|cand|=%d" (Ph4.num_features candidate)
-
+  Log.info "|cand|=%d" (Ph4.num_features candidate);
+  (* test assignments *)
+  let possible = possible_assignments reference candidate in
+  let all_assignments = assign_all possible in
+  L.iter (fun x ->
+      Printf.eprintf "score: %f %s\n"
+        (score_assignment reference candidate x)
+        (string_of_list string_of_int_pair x)
+    ) all_assignments
+  
 let () = main ()
