@@ -2,6 +2,7 @@
 
 open Printf
 
+module A = BatArray
 module CLI = Minicli.CLI
 module L = BatList
 module LO = Line_oriented
@@ -54,27 +55,25 @@ let possible_assignments (m1: Ph4.molecule_ph4) (m2: Ph4.molecule_ph4):
   let n1 = Ph4.num_features m1 in
   let n2 = Ph4.num_features m2 in
   (if n1 > n2 then
-     let () = Log.fatal "Assign.possible_assignments: n1 > n2: %d > %d" n1 n2 in
-     exit 1
+     (Log.fatal "Assign.possible_assignments: n1 > n2: %d > %d" n1 n2;
+      exit 1)
   );
   let res = ref [] in
-  for i = 0 to n1 - 1 do
-    let feat1 = m1.features.(i) in
-    (* no match is always a possibility *)
-    let i_matches = ref [-1] in
-    for j = 0 to n2 - 1 do
-      let feat2 = m2.features.(j) in
-      if feat1 = feat2 then
-        i_matches := j :: !i_matches
-    done;
-    res := (i, !i_matches) :: !res
-  done;
+  A.iteri (fun i feat1 ->
+      (* no match is always a possibility *)
+      let i_matches = ref [-1] in
+      A.iteri (fun j feat2 ->
+          if feat1 = feat2 then
+            i_matches := j :: !i_matches
+        ) m2.features;
+      res := (i, !i_matches) :: !res
+    ) m1.features;
   !res
 
 let rm_from_assignments (j: int) rem =
   L.map (fun ((i: int), js) -> (i, L.filter (fun j' -> j <> j') js)) rem
 
-(* return one, assignment along w/ the remaining possible ones *)
+(* return one assignment, along w/ the remaining possible ones *)
 let assign_one possible =
   L.fold_left (fun (res, rem) (i, js) -> match js with
       | [] -> (res, rem)
