@@ -2,12 +2,7 @@
 
 open Printf
 
-module A = BatArray
-module BA = Bigarray
-module BA1 = BA.Array1
 module CLI = Minicli.CLI
-module Fn = Filename
-module IntMap = BatMap.Int
 module L = BatList
 module LO = Line_oriented
 module Log = Dolog.Log
@@ -26,7 +21,7 @@ let all_distinct_pairs l =
 
 (* Heuristic: a good assignment means a maximum of points have been assigned
    a correspondant in the other molecule
-   AND the sum of distance errors is minimal *)
+   AND the sum of internal distance discrepancies is minimal *)
 let score_assignment m1 m2 pairs' =
   (* y = -1 <=> x was not assigned *)
   let pairs = L.filter (fun (_x, y) -> y <> -1) pairs' in
@@ -49,7 +44,7 @@ let score_assignment m1 m2 pairs' =
   L.iter2 (fun d1 d2 ->
       error := !error +. abs_float (d1 -. d2)
     ) dists1 dists2;
-  (float n) /. !error
+  (n, !error)
 
 (* for each feature in [m1], find all possible assignments in [m2];
    including no assignment (-1);
@@ -58,7 +53,10 @@ let possible_assignments (m1: Ph4.molecule_ph4) (m2: Ph4.molecule_ph4):
   (int * int list) list =
   let n1 = Ph4.num_features m1 in
   let n2 = Ph4.num_features m2 in
-  assert(n1 <= n2);
+  (if n1 > n2 then
+     let () = Log.fatal "Assign.possible_assignments: n1 > n2: %d > %d" n1 n2 in
+     exit 1
+  );
   let res = ref [] in
   for i = 0 to n1 - 1 do
     let feat1 = m1.features.(i) in
@@ -73,12 +71,15 @@ let possible_assignments (m1: Ph4.molecule_ph4) (m2: Ph4.molecule_ph4):
   done;
   !res
 
-(* return one assignment along w/ the remaining possible ones *)
+let rm_from_assignments (j: int) rem =
+  L.map (fun ((i: int), js) -> (i, L.filter (fun j' -> j <> j') js)) rem
+
+(* return one, assignment along w/ the remaining possible ones *)
 let assign_one possible =
   L.fold_left (fun (res, rem) (i, js) -> match js with
-      | [] -> assert(false)
-      | [j] -> ((i, j) :: res, rem)
-      | j :: rest -> ((i, j) :: res, (i, rest) :: rem)
+      | [] -> (res, rem)
+      | j :: rest -> ((i, j) :: res,
+                      (i, rest) :: (rm_from_assignments j rem))
     ) ([], []) possible
 
 let assign_all possibles =
@@ -123,9 +124,10 @@ let main () =
   let possible = possible_assignments reference candidate in
   let all_assignments = assign_all possible in
   L.iter (fun x ->
-      Printf.eprintf "score: %f %s\n"
-        (score_assignment reference candidate x)
-        (string_of_list string_of_int_pair x)
+      let n, error = score_assignment reference candidate x in
+      let score = (float n) /. error in
+      Printf.eprintf "score: %f N: %d %s\n"
+        score n (string_of_list string_of_int_pair x)
     ) all_assignments
   
 let () = main ()
