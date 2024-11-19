@@ -13,11 +13,31 @@ module LO = Line_oriented
 module Log = Dolog.Log
 module V3 = Vector3
 
-let score_assignment _m1 _m2 _pairs =
-  failwith "not implemented yet"
-(* let error = 0.0 in *)
-(* failwith "not implemented yet"; *)
-(* error *)
+(* small constant to avoid division by 0.0 *)
+let epsilon = 0.001
+
+let all_distinct_pairs l =
+  let rec loop acc = function
+    | [] -> acc
+    | x :: ys ->
+      let acc' = L.rev_append (L.rev_map (fun y -> (x, y)) ys) acc in
+      loop acc' ys in
+  loop [] l
+
+(* intuitively, a good assignment means a maximum of points have been assigned
+   a correspondant in the other molecule AND the sum of distance errors is
+   minimal *)
+let score_assignment m1 m2 pairs =
+  let n = L.length pairs in
+  let assign1, assign2 = L.split pairs in
+  let error = ref epsilon in
+  let coords1 = Ph4.get_coords m1 in
+  let coords2 = Ph4.get_coords m2 in
+  (* compute all internal dists in m1 *)
+  
+  (* compute all internal dists in m2 *)
+  (* measure the "disagreement error" *)
+  (float n) /. !error
 
 (* for each feature in [m1], find all possible assignments from [m2];
    including no assignment (-1);
@@ -29,7 +49,7 @@ let possible_assignments m1 m2 =
   let res = ref [] in
   for i = 0 to n1 - 1 do
     let feat1 = m1.features.(i) in
-    (* no match is always a possibility *)    
+    (* no match is always a possibility *)
     let i_matches = ref [-1] in
     for j = 0 to n2 - 1 do
       let feat2 = m2.features.(j) in
@@ -39,6 +59,18 @@ let possible_assignments m1 m2 =
     res := (i, !i_matches) :: !res
   done;
   !res
+
+(* let rec enumerate_assignments acc m1 m2 m2_unassigned possibilities = *)
+(*   match possibilities with *)
+(*   | [] -> acc *)
+(*   | x :: xs -> *)
+(*     begin *)
+(*       match x with *)
+(*       | (i, js) -> *)
+(*         L.map (fun j -> *)
+(*             enumerate_assignments () *)
+
+(*     end *)
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
