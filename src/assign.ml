@@ -27,7 +27,10 @@ let all_distinct_pairs l =
 (* Heuristic: a good assignment means a maximum of points have been assigned
    a correspondant in the other molecule
    AND the sum of distance errors is minimal *)
-let score_assignment m1 m2 pairs =
+let score_assignment m1 m2 pairs' =
+  (* y = -1 <=> x was not assigned *)
+  let pairs = L.filter (fun (_x, y) -> y <> -1) pairs' in
+  (* maximize number of assignments *)
   let n = L.length pairs in
   let assign1, assign2 = L.split pairs in
   let error = ref epsilon in
@@ -42,7 +45,7 @@ let score_assignment m1 m2 pairs =
     L.rev_map (fun (i, j) -> V3.dist coords1.(i) coords1.(j)) pairs1 in
   let dists2 =
     L.rev_map (fun (i, j) -> V3.dist coords2.(i) coords2.(j)) pairs2 in
-  (* measure the "disagreement error" *)
+  (* minimize "disagreement over distances" *)
   L.iter2 (fun d1 d2 ->
       error := !error +. abs_float (d1 -. d2)
     ) dists1 dists2;
