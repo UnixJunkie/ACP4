@@ -48,10 +48,11 @@ let score_assignment m1 m2 pairs =
     ) dists1 dists2;
   (float n) /. !error
 
-(* for each feature in [m1], find all possible assignments from [m2];
+(* for each feature in [m1], find all possible assignments in [m2];
    including no assignment (-1);
-   the smaller molecule is supposed to be [m1] *)
-let possible_assignments m1 m2 =
+   the smallest molecule is supposed to be [m1] *)
+let possible_assignments (m1: Ph4.molecule_ph4) (m2: Ph4.molecule_ph4):
+  (int * int list) list =
   let n1 = Ph4.num_features m1 in
   let n2 = Ph4.num_features m2 in
   assert(n1 <= n2);
@@ -69,17 +70,21 @@ let possible_assignments m1 m2 =
   done;
   !res
 
-(* let rec enumerate_assignments acc m1 m2 m2_unassigned possibilities = *)
-(*   match possibilities with *)
-(*   | [] -> acc *)
-(*   | x :: xs -> *)
-(*     begin *)
-(*       match x with *)
-(*       | (i, js) -> *)
-(*         L.map (fun j -> *)
-(*             enumerate_assignments () *)
+(* return one assignment along w/ the remaining possible ones *)
+let assign_one possible =
+  L.fold_left (fun (res, rem) (i, js) -> match js with
+      | [] -> assert(false)
+      | [j] -> ((i, j) :: res, rem)
+      | j :: rest -> ((i, j) :: res, (i, rest) :: rem)
+    ) ([], []) possible
 
-(*     end *)
+let assign_all possibles =
+  let rec loop acc = function
+    | [] -> acc
+    | l ->
+      let assigned, rem = assign_one l in
+      loop (assigned :: acc) rem in
+  loop [] possibles
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
