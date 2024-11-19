@@ -24,19 +24,28 @@ let all_distinct_pairs l =
       loop acc' ys in
   loop [] l
 
-(* intuitively, a good assignment means a maximum of points have been assigned
-   a correspondant in the other molecule AND the sum of distance errors is
-   minimal *)
+(* Heuristic: a good assignment means a maximum of points have been assigned
+   a correspondant in the other molecule
+   AND the sum of distance errors is minimal *)
 let score_assignment m1 m2 pairs =
   let n = L.length pairs in
   let assign1, assign2 = L.split pairs in
   let error = ref epsilon in
   let coords1 = Ph4.get_coords m1 in
   let coords2 = Ph4.get_coords m2 in
-  (* compute all internal dists in m1 *)
-  
-  (* compute all internal dists in m2 *)
+  (* compute all internal dists in m1 and m2 *)
+  let pairs1 = all_distinct_pairs assign1 in
+  let pairs2 = all_distinct_pairs assign2 in
+  (* FBR: we need to use a distance cache in there
+   *      it can be initialized the first time molecules are read in *)
+  let dists1 =
+    L.rev_map (fun (i, j) -> V3.dist coords1.(i) coords1.(j)) pairs1 in
+  let dists2 =
+    L.rev_map (fun (i, j) -> V3.dist coords2.(i) coords2.(j)) pairs2 in
   (* measure the "disagreement error" *)
+  L.iter2 (fun d1 d2 ->
+      error := !error +. abs_float (d1 -. d2)
+    ) dists1 dists2;
   (float n) /. !error
 
 (* for each feature in [m1], find all possible assignments from [m2];
