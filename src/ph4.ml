@@ -29,6 +29,12 @@ type molecule_ph4 = { name: string;
                       features: feature array;
                       coords: Vector3.t array }
 
+let get_features m =
+  m.features
+
+let get_coords m =
+  m.coords
+
 (* a sparse float array *)
 type channels = (float IntMap.t) array
 
