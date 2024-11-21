@@ -1,5 +1,14 @@
 (* Find a good assignment between two sets of ph4 features *)
 
+(* for toplevel tests
+#require "batteries";;
+#require "minicli";;
+#require "dolog";;
+#require "line_oriented";;
+#require "vector3";;
+#mod_use "ph4.ml";;
+*)
+
 open Printf
 
 module A = BatArray
@@ -71,24 +80,9 @@ let compatible_feats m1 m2 =
         acc
     ) [] all_feats
 
-(* if [i] is assigned to [j] (i, j), then no one else can be assigned to [j] *)
-let assign_only_once l =
-  let rec loop acc = function
-    | [] -> acc
-    | ((i: int), (j: int)) :: rest ->
-      let acc' =
-        let l' = (i, j) :: (L.filter (fun (_i', j') -> j <> j') rest) in
-        L.rev_append l' acc in
-      loop acc' rest in
-  loop [] l
-
-let all_possible_assignments compats =
-  let intermediate =
-    L.fold_left (fun acc (feats1, feats2) ->
-        let prod = L.cartesian_product feats1 feats2 in
-        (assign_only_once prod) :: acc
-      ) [] compats in
-  failwith "not implemented yet"
+let possible_assignments feats1 feats2 =
+  (* (x, -1): each feature in feats1 might be unassigned *)
+  L.cartesian_product feats1 (-1 :: feats2)
 
 let string_of_list to_str l =
   let strings = L.map to_str l in
@@ -126,14 +120,15 @@ let main () =
       Log.info "%s - %s"
         (string_of_list string_of_int xs)
         (string_of_list string_of_int ys)
-    ) compats;
-  let all_assignments = all_possible_assignments compats in
-  Log.warn "possible assignments: %d" (L.length all_assignments);
-  L.iter (fun x ->
-      let n, error = score_assignment reference candidate x in
-      let score = (float n) /. error in
-      Log.info "score: %f N: %d %s"
-        score n (string_of_list string_of_int_pair x)
-    ) all_assignments
+    ) compats
+  (* ; *)
+  (* let all_assignments = all_possible_assignments compats in *)
+  (* Log.warn "possible assignments: %d" (L.length all_assignments); *)
+  (* L.iter (fun x -> *)
+  (*     let n, error = score_assignment reference candidate x in *)
+  (*     let score = (float n) /. error in *)
+  (*     Log.info "score: %f N: %d %s" *)
+  (*       score n (string_of_list string_of_int_pair x) *)
+  (*   ) all_assignments *)
 
 let () = main ()
