@@ -92,6 +92,21 @@ let string_of_list to_str l =
 let string_of_int_pair (x, y) =
   sprintf "(%d, %d)" x y
 
+(* code kindly provided by Nicolas Ojeda Bar *)
+let rec enumerate lhs rhs =
+  match lhs with
+  | [] -> [[]]
+  | x :: xs ->
+    L.concat_map
+      (fun y ->
+         let rhs =
+           if y = -1 then
+             rhs
+           else
+             List.filter ((<>) y) rhs in
+         List.map (fun ass -> (x, y) :: ass) (enumerate xs rhs)
+      ) rhs
+
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
   Log.color_on ();
