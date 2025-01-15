@@ -1,4 +1,5 @@
 
+module A = BatArray
 module CLI = Minicli.CLI
 module Log = Dolog.Log
 module LO = Line_oriented
@@ -18,6 +19,19 @@ module P = struct
 end
 
 module BST = Bst.Bisec_tree.Make(P)
+
+(* score already rotated and translated molecule [m] *)
+let score_molecule_pose bsts m =
+  let error = ref 0.0 in
+  A.iteri (fun i feat ->
+      let bst = bsts.(i) in
+      let cand_coords = Ph4.get_coords_with_feat m feat in
+      A.iter (fun xyz ->
+          let _nn, dist = BST.nearest_neighbor xyz bst in
+          error := !error +. dist
+        ) cand_coords
+    ) Ph4.all_features;
+  !error
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
