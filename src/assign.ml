@@ -80,10 +80,6 @@ let compatible_feats m1 m2 =
         acc
     ) [] all_feats
 
-let possible_assignments feats1 feats2 =
-  (* (x, -1): each feature in feats1 might be unassigned *)
-  L.cartesian_product feats1 (-1 :: feats2)
-
 let string_of_list to_str l =
   let strings = L.map to_str l in
   let body = String.concat "; " strings in
@@ -132,9 +128,11 @@ let main () =
   (* test assignments *)
   let compats = compatible_feats reference candidate in
   L.iter (fun (xs, ys) ->
-      Log.info "%s - %s"
-        (string_of_list string_of_int xs)
-        (string_of_list string_of_int ys)
+      let _combs = enumerate xs ys in
+      failwith "not implemented yet"
+      (* Log.info "%s - %s" *)
+      (*   (string_of_list string_of_int xs) *)
+      (*   (string_of_list string_of_int ys) *)
     ) compats
   (* ; *)
   (* let all_assignments = all_possible_assignments compats in *)
