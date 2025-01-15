@@ -15,6 +15,7 @@ module V3 = Vector3
 
 open Printf
 
+(* !!! DO NOT CHANGE ORDER !!! *)
 type feature = ARO
              | HYD
              | HBA
@@ -22,6 +23,7 @@ type feature = ARO
              | POS
              | NEG
 
+(* !!! DO NOT CHANGE ORDER !!! *)
 let all_features = [|ARO; HYD; HBA; HBD; POS; NEG|]
 
 let nb_features = A.length all_features
