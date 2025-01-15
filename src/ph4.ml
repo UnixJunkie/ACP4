@@ -35,6 +35,12 @@ let get_features m =
 let get_coords m =
   m.coords
 
+(* all coords in [m] w/ the given ph4 feature type *)
+let get_coords_with_feat m f =
+  A.filteri (fun i _xyz ->
+      f = m.features.(i)
+    ) m.coords
+
 (* a sparse float array *)
 type channels = (float IntMap.t) array
 
