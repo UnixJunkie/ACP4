@@ -2,6 +2,7 @@
 module CLI = Minicli.CLI
 module Log = Dolog.Log
 module LO = Line_oriented
+module V3 = Mmo.V3
 
 open Printf
 
@@ -10,6 +11,13 @@ open Printf
 
 let read_one_ph4_molecule fn =
   LO.with_in_file fn Ph4.read_one_ph4_encoded_molecule
+
+module P = struct
+  type t = V3.t
+  let dist = V3.dist
+end
+
+module BST = Bst.Bisec_tree.Make(P)
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
@@ -32,10 +40,21 @@ let main () =
   let ref_fn = CLI.get_string ["-ref"] args in
   let cand_fn = CLI.get_string ["-cand"] args in
   CLI.finalize (); (* -------------------------------------------------- *)
-  let _ref_mol = read_one_ph4_molecule ref_fn in
+  let ref_mol = read_one_ph4_molecule ref_fn in
   let _cand_mol = read_one_ph4_molecule cand_fn in
-  (* Each ph4 type in A is BST indexed first. *)
-
+  (* Each ph4 type in A is BST indexed first *)
+  let aro_coords = Ph4.get_coords_with_feat ref_mol ARO in
+  let hyd_coords = Ph4.get_coords_with_feat ref_mol HYD in
+  let hba_coords = Ph4.get_coords_with_feat ref_mol HBA in
+  let hbd_coords = Ph4.get_coords_with_feat ref_mol HBD in
+  let pos_coords = Ph4.get_coords_with_feat ref_mol POS in
+  let neg_coords = Ph4.get_coords_with_feat ref_mol NEG in
+  let _aro_bst = BST.(create 1 Two_bands) aro_coords in
+  let _hyd_bst = BST.(create 1 Two_bands) hyd_coords in
+  let _hba_bst = BST.(create 1 Two_bands) hba_coords in
+  let _hbd_bst = BST.(create 1 Two_bands) hbd_coords in
+  let _pos_bst = BST.(create 1 Two_bands) pos_coords in
+  let _neg_bst = BST.(create 1 Two_bands) neg_coords in
   (* - find the best rotation and translation of B that minimizes error(A, B). *)
   (* To evaluate one rotation and one translation, the error function is: *)
   (* - for each ph4 point in B, add the distance to its nearest neighbor in A *)
