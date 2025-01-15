@@ -4,4 +4,5 @@
   (names acp4 scissors MST superpose)
   (public_names acp4 acp4_scissors acp4_mst acp4_superpose)
   (modules ph4 acp4 gnuplot common sdf_3D scissors MST superpose)
-  (libraries batteries dolog minicli parany vector3 line_oriented cpm bst ocamlgraph molenc mmo))
+  (libraries batteries dolog minicli parany vector3 line_oriented cpm bst
+             ocamlgraph molenc mmo nlopt))
