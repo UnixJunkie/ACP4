@@ -53,70 +53,35 @@ let nlopt_eval_solution _verbose bsts centered_m params _gradient =
   let posed = place_molecule centered_m params in
   score_molecule_pose bsts posed
 
-(* let nlopt_optimize_regr verbose no_shrink max_evals kernel *)
-(*     (e_min, e_def, e_max) *)
-(*     (c_min, c_def, c_max) *)
-(*     (g_min, g_def, g_max) train test = *)
-(*   match kernel with *)
-(*   | Linear -> *)
-(*     let ndims = 2 in (\* for the linear kernel: e and C *\) *)
-(*     (\* local optimizer that will be passed to the global one *\) *)
-(*     let local = Nlopt.(create sbplx ndims) in (\* local optimizer: gradient-free *\) *)
-(*     Nlopt.set_max_objective local *)
-(*       (nlopt_eval_solution verbose no_shrink train test); *)
-(*     (\* I don't set parameter bounds on the local optimizer, I guess *)
-(*      * the global optimizer handles this *\) *)
-(*     (\* hard/stupid stop conditions *\) *)
-(*     Nlopt.set_stopval local 1.0; (\* max R2 *\) *)
-(*     (\* smart stop conditions *\) *)
-(*     Nlopt.set_ftol_abs local 0.0001; (\* FBR: might need to be tweaked *\) *)
-(*     let global = Nlopt.(create auglag ndims) in (\* global optimizer *\) *)
-(*     Nlopt.set_local_optimizer global local; *)
-(*     Nlopt.set_max_objective global *)
-(*       (nlopt_eval_solution verbose no_shrink train test); *)
-(*     (\* bounds for e and C *\) *)
-(*     Nlopt.set_lower_bounds global [|e_min; c_min|]; *)
-(*     Nlopt.set_upper_bounds global [|e_max; c_max|]; *)
-(*     (\* hard/stupid stop conditions *\) *)
-(*     Nlopt.set_stopval global 1.0; (\* max R2 *\) *)
-(*     (\* max number of single_train_test_regr calls *\) *)
-(*     Nlopt.set_maxeval global max_evals; *)
-(*     (\* not so stupid starting solution *\) *)
-(*     let initial_guess = [|0.0; 1.0|] in *)
-(*     let stop_cond, params, r2 = Nlopt.optimize global initial_guess in *)
-(*     Log.info "NLopt optimize global: %s" (Nlopt.string_of_result stop_cond); *)
-(*     let e, c = params.(0), params.(1) in *)
-(*     (e, c, Linear, r2) *)
-(*   | RBF _ -> *)
-(*     let ndims = 3 in (\* for the RBF kernel: (e, C, g) *\) *)
-(*     (\* local optimizer that will be passed to the global one *\) *)
-(*     let local = Nlopt.(create sbplx ndims) in (\* local optimizer: gradient-free *\) *)
-(*     Nlopt.set_max_objective local *)
-(*       (nlopt_eval_solution verbose no_shrink train test); *)
-(*     (\* I don't set parameter bounds on the local optimizer, I guess *)
-(*      * the global optimizer handles this *\) *)
-(*     (\* hard/stupid stop conditions *\) *)
-(*     Nlopt.set_stopval local 1.0; (\* max R2 *\) *)
-(*     (\* smart stop conditions *\) *)
-(*     Nlopt.set_ftol_abs local 0.0001; (\* FBR: might need to be tweaked *\) *)
-(*     let global = Nlopt.(create auglag ndims) in (\* global optimizer *\) *)
-(*     Nlopt.set_local_optimizer global local; *)
-(*     Nlopt.set_max_objective global *)
-(*       (nlopt_eval_solution verbose no_shrink train test); *)
-(*     (\* bounds for e and C *\) *)
-(*     Nlopt.set_lower_bounds global [|e_min; c_min; g_min|]; *)
-(*     Nlopt.set_upper_bounds global [|e_max; c_max; g_max|]; *)
-(*     (\* hard/stupid stop conditions *\) *)
-(*     Nlopt.set_stopval global 1.0; (\* max R2 *\) *)
-(*     (\* max number of single_train_test_regr calls *\) *)
-(*     Nlopt.set_maxeval global max_evals; *)
-(*     (\* not so stupid starting solution *\) *)
-(*     let initial_guess = [|e_def; c_def; g_def|] in *)
-(*     let stop_cond, params, r2 = Nlopt.optimize global initial_guess in *)
-(*     Log.info "NLopt optimize global: %s" (Nlopt.string_of_result stop_cond); *)
-(*     let e, c, g = params.(0), params.(1), params.(2) in *)
-(*     (e, c, RBF g, r2) *)
-(*   | _ -> failwith "Svmwrap.nlopt_optimize_regr: only Linear or RBF kernel" *)
+let nlopt_optimize verbose bsts centered_m max_evals =
+  let ndims = 6 in (* DOFs: 3 rotations + 3 translations *)
+  (* local optimizer that will be passed to the global one *)
+  let local = Nlopt.(create sbplx ndims) in (* local optimizer: gradient-free *)
+  Nlopt.set_min_objective local (nlopt_eval_solution verbose bsts centered_m);
+  (* I don't set parameter bounds on the local optimizer, I guess
+   * the global optimizer handles this *)
+  (* hard stop conditions *)
+  Nlopt.set_stopval local 0.0; (* absolute minimum total error *)
+  (* smart stop conditions *)
+  Nlopt.set_ftol_abs local 0.0001; (* might need to be tweaked *)
+  let global = Nlopt.(create auglag ndims) in (* global optimizer *)
+  Nlopt.set_local_optimizer global local;
+  Nlopt.set_min_objective global (nlopt_eval_solution verbose bsts centered_m);
+  (* bounds for parameters *)
+  let two_pi = Mmo.Math.two_pi in
+  (* FBR: found tx_min, ty_min, tz_min using bounding boxes? *)
+  (*                              rz      ry      rz       tx       ty       tz *)
+  Nlopt.set_lower_bounds global [|0.0;    0.0;    0.0;    -1000.0; -1000.0; -1000.0|];
+  Nlopt.set_upper_bounds global [|two_pi; two_pi; two_pi;  1000.0;  1000.0;  1000.0|];
+  (* hard stop conditions *)
+  Nlopt.set_stopval global 0.0;
+  (* max number of iterations *)
+  Nlopt.set_maxeval global max_evals;
+  (* starting solution *)
+  let start_sol = Array.make ndims 0.0 in (* no rot., no trans. *)
+  let stop_cond, params, _error = Nlopt.optimize global start_sol in
+  Log.info "NLopt optimize global: %s" (Nlopt.string_of_result stop_cond);
+  params
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
