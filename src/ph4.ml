@@ -22,7 +22,9 @@ type feature = ARO
              | POS
              | NEG
 
-let nb_features = 6
+let all_features = [|ARO; HYD; HBA; HBD; POS; NEG|]
+
+let nb_features = A.length all_features
 let nb_channels = 21 (* 6 + 6*5/2 *)
 
 type molecule_ph4 = { name: string;
