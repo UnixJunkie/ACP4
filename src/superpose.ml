@@ -77,6 +77,8 @@ let nlopt_eval_solution verbose bsts centered_m params _gradient =
   );
   error
 
+let two_pi = Mmo.Math.two_pi
+
 let nlopt_optimize verbose bsts centered_m max_evals =
   let ndims = 6 in (* DOFs: 3 rotations + 3 translations *)
   (* local optimizer that will be passed to the global one *)
@@ -92,7 +94,6 @@ let nlopt_optimize verbose bsts centered_m max_evals =
   Nlopt.set_local_optimizer global local;
   Nlopt.set_min_objective global (nlopt_eval_solution verbose bsts centered_m);
   (* bounds for parameters *)
-  let two_pi = Mmo.Math.two_pi in
   (* FBR: found tx_min, ty_min, tz_min using bounding boxes? *)
   (*                              rz      ry      rz       tx       ty       tz *)
   Nlopt.set_lower_bounds global [|0.0;    0.0;    0.0;    -1000.0; -1000.0; -1000.0|];
@@ -103,9 +104,19 @@ let nlopt_optimize verbose bsts centered_m max_evals =
   Nlopt.set_maxeval global max_evals;
   (* starting solution *)
   let start_sol = Array.make ndims 0.0 in (* no rot., no trans. *)
-  let stop_cond, params, _error = Nlopt.optimize global start_sol in
+  let stop_cond, params, error = Nlopt.optimize global start_sol in
   Log.info "NLopt optimize global: %s" (Nlopt.string_of_result stop_cond);
+  Log.info "final error: %f" error;
   params
+
+let random_start m =
+  Random.self_init ();
+  place_molecule m [|Random.float two_pi;
+                     Random.float two_pi;
+                     Random.float two_pi;
+                     -1000.0 +. Random.float 2000.;
+                     -1000.0 +. Random.float 2000.;
+                     -1000.0 +. Random.float 2000.|]
 
 let main () =
   Log.(set_prefix_builder short_prefix_builder);
@@ -117,12 +128,15 @@ let main () =
               %s\n  \
               [-ref <filename.ph4>]: reference structure\n  \
               [-cand <filename.ph4>]: candidate structure\n  \
-              [-o <filename.ph4>]: optimally superposed candidate structure\n  \
+              [-o <filename.ph4>]: optimally superposed cand. structure\n  \
+              [--rand-start]: randomize starting position of cand. before\n  \
+              starting optimization (for tests).\n  \
               [-v]: verbose/debug mode\n"
        Sys.argv.(0);
      exit 1);
   let verbose = CLI.get_set_bool ["-v"] args in
   if verbose then Log.(set_log_level DEBUG);
+  let rand_start = CLI.get_set_bool ["--rand-start"] args in
   (* given two .ph4 files, assume: *)
   (* - LHS = A: the reference structure *)
   (* - RHS = B: the candidate structure *)
@@ -133,7 +147,10 @@ let main () =
   let ref_mol = read_one_ph4_molecule ref_fn in
   let cand_mol =
     center_molecule
-      (read_one_ph4_molecule cand_fn) in
+      (if rand_start then
+         random_start (read_one_ph4_molecule cand_fn)         
+       else
+         read_one_ph4_molecule cand_fn) in
   (* Each ph4 type in A is BST indexed first *)
   let aro_coords = Ph4.get_coords_with_feat ref_mol ARO in
   let hyd_coords = Ph4.get_coords_with_feat ref_mol HYD in
