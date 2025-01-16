@@ -78,6 +78,9 @@ let write_out out mol =
       fprintf out "%s %f %f %f\n" (string_of_feature feat) x y z
     ) mol.features mol.coords
 
+let to_file fn mol =
+  LO.with_out_file fn (fun out -> write_out out mol)
+
 let sprintf_feat i mol =
   let feat = mol.features.(i) in
   let x, y, z = Vector3.to_triplet mol.coords.(i) in
