@@ -4,6 +4,7 @@ module CLI = Minicli.CLI
 module Log = Dolog.Log
 module LO = Line_oriented
 module V3 = Mmo.V3
+module Rot = Mmo.Rot
 
 open Printf
 
@@ -49,6 +50,10 @@ let translate_by vects delta =
 
 let translate_to vects p =
   translate_by vects (V3.diff p (geometric_center vects))
+
+(* CONSTRAINT: vects must already be centered at origin *)
+let centered_rotate vects r =
+  A.map (Rot.rotate r) vects
 
 (* FBR:TODO fill this one *)
 (* FBR:TODO we need a function to center an array of coordinates *)
