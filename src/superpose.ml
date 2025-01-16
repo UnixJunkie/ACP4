@@ -36,6 +36,20 @@ let score_molecule_pose bsts m =
     ) Ph4.all_features;
   !error
 
+let geometric_center vects =
+  V3.div
+    (A.fold_left V3.add V3.origin vects)
+    (float (A.length vects))
+
+let translate_by vects delta =
+  let dx, dy, dz = V3.to_triplet delta in
+  A.map (fun V3.{x; y; z} ->
+      V3.make (x +. dx) (y +. dy) (z +. dz)
+    ) vects
+
+let translate_to vects p =
+  translate_by vects (V3.diff p (geometric_center vects))
+
 (* FBR:TODO fill this one *)
 (* FBR:TODO we need a function to center an array of coordinates *)
 (* FBR:TODO we need a function to rotate an array of coordinates *)
