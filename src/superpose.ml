@@ -51,6 +51,9 @@ let translate_by vects delta =
 let translate_to vects p =
   translate_by vects (V3.diff p (geometric_center vects))
 
+let center_molecule m =
+  Ph4.{ m with coords = translate_to m.coords V3.origin }
+
 (* CONSTRAINT: vects must already be centered at origin *)
 let centered_rotate vects r =
   A.map (Rot.rotate r) vects
@@ -122,7 +125,9 @@ let main () =
   let cand_fn = CLI.get_string ["-cand"] args in
   CLI.finalize (); (* -------------------------------------------------- *)
   let ref_mol = read_one_ph4_molecule ref_fn in
-  let _cand_mol = read_one_ph4_molecule cand_fn in
+  let cand_mol =
+    center_molecule
+      (read_one_ph4_molecule cand_fn) in
   (* Each ph4 type in A is BST indexed first *)
   let aro_coords = Ph4.get_coords_with_feat ref_mol ARO in
   let hyd_coords = Ph4.get_coords_with_feat ref_mol HYD in
@@ -136,7 +141,7 @@ let main () =
   let hbd_bst = BST.(create 1 Two_bands) hbd_coords in
   let pos_bst = BST.(create 1 Two_bands) pos_coords in
   let neg_bst = BST.(create 1 Two_bands) neg_coords in
-  let _all_bsts = [|aro_bst; hyd_bst; hba_bst; hbd_bst; pos_bst; neg_bst|] in
+  let bsts = [|aro_bst; hyd_bst; hba_bst; hbd_bst; pos_bst; neg_bst|] in
   (* - find the best rotation and translation of B that minimizes error(A, B). *)
   (* At the end, output the (rot, trans) w/ the smallest error. *)
-  ()
+  nlopt_optimize verbose bsts cand_mol 1000
