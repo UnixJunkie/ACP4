@@ -55,17 +55,15 @@ let translate_to vects p =
 let centered_rotate vects r =
   A.map (Rot.rotate r) vects
 
-(* FBR:TODO fill this one *)
-(* FBR:TODO we need a function to center an array of coordinates *)
-(* FBR:TODO we need a function to rotate an array of coordinates *)
-let place_molecule _centered_m _params =
-  (* let rx = params.(0) in *)
-  (* let ry = params.(1) in *)
-  (* let rz = params.(2) in *)
-  (* let tx = params.(3) in *)
-  (* let ty = params.(4) in *)
-  (* let tz = params.(5) in *)
-  failwith "not implemented yet"
+(* rotate then translate already centered molecule [centered_m] *)
+let place_molecule centered_m params =
+  let rotated =
+    centered_rotate
+      Ph4.(centered_m.coords)
+      (Rot.r_xyz params.(0) params.(1) params.(2)) in
+  Ph4.{ centered_m with
+        coords =
+          translate_to rotated (V3.make params.(3) params.(4) params.(5)) }
 
 (* we don't have a gradient --> _gradient *)
 let nlopt_eval_solution _verbose bsts centered_m params _gradient =
