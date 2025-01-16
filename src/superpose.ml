@@ -69,9 +69,13 @@ let place_molecule centered_m params =
           translate_to rotated (V3.make params.(3) params.(4) params.(5)) }
 
 (* we don't have a gradient --> _gradient *)
-let nlopt_eval_solution _verbose bsts centered_m params _gradient =
+let nlopt_eval_solution verbose bsts centered_m params _gradient =
   let posed = place_molecule centered_m params in
-  score_molecule_pose bsts posed
+  let error = score_molecule_pose bsts posed in
+  (if verbose then
+     Log.info "err: %f" error
+  );
+  error
 
 let nlopt_optimize verbose bsts centered_m max_evals =
   let ndims = 6 in (* DOFs: 3 rotations + 3 translations *)
@@ -113,6 +117,7 @@ let main () =
               %s\n  \
               [-ref <filename.ph4>]: reference structure\n  \
               [-cand <filename.ph4>]: candidate structure\n  \
+              [-o <filename.ph4>]: optimally superposed candidate structure\n  \
               [-v]: verbose/debug mode\n"
        Sys.argv.(0);
      exit 1);
@@ -123,6 +128,7 @@ let main () =
   (* - RHS = B: the candidate structure *)
   let ref_fn = CLI.get_string ["-ref"] args in
   let cand_fn = CLI.get_string ["-cand"] args in
+  let output_fn = CLI.get_string ["-o"] args in
   CLI.finalize (); (* -------------------------------------------------- *)
   let ref_mol = read_one_ph4_molecule ref_fn in
   let cand_mol =
@@ -144,4 +150,15 @@ let main () =
   let bsts = [|aro_bst; hyd_bst; hba_bst; hbd_bst; pos_bst; neg_bst|] in
   (* - find the best rotation and translation of B that minimizes error(A, B). *)
   (* At the end, output the (rot, trans) w/ the smallest error. *)
-  nlopt_optimize verbose bsts cand_mol 1000
+  let best_params = nlopt_optimize verbose bsts cand_mol 1000 in
+  Log.info "best_params: %f %f %f %f %f %f"
+    best_params.(0)
+    best_params.(1)
+    best_params.(2)
+    best_params.(3)
+    best_params.(4)
+    best_params.(5);
+  let cand_opt = place_molecule cand_mol best_params in
+  Ph4.to_file output_fn cand_opt
+
+let () = main ()
