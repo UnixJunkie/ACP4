@@ -24,9 +24,12 @@ def rot_from_rx_ry_rz(rx: float, ry: float, rz: float):
     r = np.matmul(np.matmul(rz, ry), rx)
     return Transformation(r, no_trans)
 
-def read_three_floats(line: str) -> tuple[float]:
-    x, y, z = line.strip().split(',')
-    return (float(x), float(y), float(z))
+def read_three_floats(line: str):
+    if line == None:
+        return None
+    else:
+        x, y, z = line.strip().split(',')
+        return (float(x), float(y), float(z))
 
 if __name__ == "__main__":
     # CLI options parsing -----------------------------------------------------
@@ -38,8 +41,10 @@ if __name__ == "__main__":
                         help = "output file")
     parser.add_argument("-r", metavar = "rx,ry,rz", dest = "r_xyz",
                         help = "angular rotations", default='0.,0.,0.')
-    parser.add_argument("-t", metavar = "tx,ty,tz", dest = "t_xyz",
-                        help = "relative translations", default='0.,0.,0.')
+    parser.add_argument("-by", metavar = "tx,ty,tz", dest = "by_xyz",
+                        help = "relative translation", default=None)
+    parser.add_argument("-to", metavar = "tx,ty,tz", dest = "to_xyz",
+                        help = "absolute translation", default=None)
     if len(sys.argv) == 1:
         # show help in case user has no clue of what to do
         parser.print_help(sys.stderr)
@@ -49,12 +54,19 @@ if __name__ == "__main__":
     input_fn: str = args.input_fn
     output_fn: str = args.output_fn
     rx, ry, rz = read_three_floats(args.r_xyz)
-    tx, ty, tz = read_three_floats(args.t_xyz)
+    by_xyz = read_three_floats(args.by_xyz)
+    to_xyz = read_three_floats(args.to_xyz)
     # 1) center PDB
     atoms = parsePDB(input_fn)
     previous_center = calcCenter(atoms)
     print('prev_center: %s' % previous_center)
-    new_center = previous_center + np.array([tx, ty, tz])
+    new_center = None
+    if by_xyz != None:
+        dx, dy, dz = by_xyz
+        new_center = previous_center + np.array([dx, dy, dz])
+    if to_xyz != None:
+        dx, dy, dz = to_xyz
+        new_center = np.array([dx, dy, dz])
     print('next_center: %s' % new_center)
     moveAtoms(atoms, to=origin)
     # 2) rotate around Ox, Oy then Oz
