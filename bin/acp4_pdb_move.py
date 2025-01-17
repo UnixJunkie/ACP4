@@ -4,6 +4,7 @@
 # rotation given by angles in radians: rx, ry, rz
 # translation relative to the current position: tx, ty, tz
 
+import argparse
 import numpy as np
 import sys
 import typing
@@ -23,16 +24,32 @@ def rot_from_rx_ry_rz(rx: float, ry: float, rz: float):
     r = np.matmul(np.matmul(rz, ry), rx)
     return Transformation(r, no_trans)
 
+def read_three_floats(line: str) -> tuple[float]:
+    x, y, z = line.strip().split(',')
+    return (float(x), float(y), float(z))
+
 if __name__ == "__main__":
-    # FBR: proper CLI
-    input_fn: str = sys.argv[1]
-    rx = float(sys.argv[2])
-    ry = float(sys.argv[3])
-    rz = float(sys.argv[4])
-    tx = float(sys.argv[5])
-    ty = float(sys.argv[6])
-    tz = float(sys.argv[7])
-    output_fn = sys.argv[8]
+    # CLI options parsing -----------------------------------------------------
+    parser = argparse.ArgumentParser(
+        description = "rotate then translate a pdb file")
+    parser.add_argument("-i", metavar = "input.pdb", dest = "input_fn",
+                        help = "input file")
+    parser.add_argument("-o", metavar = "output.pdb", dest = "output_fn",
+                        help = "output file")
+    parser.add_argument("-r", metavar = "rx,ry,rz", dest = "r_xyz",
+                        help = "angular rotations", default='0.,0.,0.')
+    parser.add_argument("-t", metavar = "tx,ty,tz", dest = "t_xyz",
+                        help = "relative translations", default='0.,0.,0.')
+    if len(sys.argv) == 1:
+        # show help in case user has no clue of what to do
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+    args = parser.parse_args()
+    # -------------------------------------------------------------------------
+    input_fn: str = args.input_fn
+    output_fn: str = args.output_fn
+    rx, ry, rz = read_three_floats(args.r_xyz)
+    tx, ty, tz = read_three_floats(args.t_xyz)
     # 1) center PDB
     atoms = parsePDB(input_fn)
     previous_center = calcCenter(atoms)
