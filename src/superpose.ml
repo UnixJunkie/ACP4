@@ -9,9 +9,6 @@ module SO3 = Mmo.SO3
 
 open Printf
 
-(* FBR: TODO: turn on clustering of features (Ph4.cluster_features)
-   via a CLI option? *)
-
 let read_one_ph4_molecule fn =
   LO.with_in_file fn Ph4.read_one_ph4_encoded_molecule
 
@@ -209,7 +206,9 @@ let main () =
   let best_params, error = nlopt_optimize init_params ref_mol_bsts cand_mol 100_000 in
   if error < !best_score then
     (Log.info "score improved: %f" error;
-     Log.info "best_params: %f %f %f %f %f %f"
+     printf "best_params:\n";
+     (* each float prefixed by one space on purpose *)
+     printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n"
        best_params.(0)
        best_params.(1)
        best_params.(2)
