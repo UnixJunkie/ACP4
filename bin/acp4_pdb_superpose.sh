@@ -25,11 +25,15 @@ TMP_OUT_DIR=`mktemp -d`
 trap 'rm -rf ${TMP_OUT_DIR}' EXIT
 
 # get ref and curr in ph4 format
-obabel ${REF_PDB} -O ${TMP_OUT_DIR}/ref.sdf 2>&1 | tee ${TMP_OUT_DIR}/obabel.log
-obabel ${MOV_PDB} -O ${TMP_OUT_DIR}/mov.sdf 2>&1 | tee ${TMP_OUT_DIR}/obabel.log
+obabel ${REF_PDB} -O ${TMP_OUT_DIR}/ref.sdf 2>&1 >> ${TMP_OUT_DIR}/obabel.log
+obabel ${MOV_PDB} -O ${TMP_OUT_DIR}/mov.sdf 2>&1 >> ${TMP_OUT_DIR}/obabel.log
 
-acp4_ph4.py -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 2>&1 | tee ${TMP_OUT_DIR}/acp4_ph4.log
-acp4_ph4.py -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 2>&1 | tee ${TMP_OUT_DIR}/acp4_ph4.log
+# conda setup
+source /apps/miniconda3/4.10.3/etc/profile.d/conda.sh
+conda activate /apps/conda_envs/rdkit_prody
+
+acp4_ph4.py -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
+acp4_ph4.py -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
 
 # try to find optimal transform (requires the nlopt library)
 export LD_LIBRARY_PATH=/apps/nlopt/2.7.1/lib64:${LD_LIBRARY_PATH}
