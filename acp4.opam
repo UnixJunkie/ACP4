@@ -21,7 +21,7 @@ depends: [
   "dune" {>= "2.9"}
   "line_oriented" {>= "1.1.0"}
   "minicli" {>= "5.0.0"}
-  "mmo" #{>= "1.0.0"}
+  "mmo" {>= "1.0.0"}
   "nlopt"
   "ocaml" {>= "4.08"}
   "parany" {>= "11.0.0"}
