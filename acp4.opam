@@ -10,6 +10,7 @@ install: [
   ["cp" "bin/acp4_ph4.py" "%{bin}%/acp4_ph4.py"]
   ["cp" "bin/acp4_get_pocket.py" "%{bin}%/acp4_get_pocket.py"]
   ["cp" "bin/acp4_renum_conf.py" "%{bin}%/acp4_renum_conf.py"]
+  ["cp" "bin/acp4_pdb_move.py" "%{bin}%/acp4_pdb_move.py"]
 ]
 depends: [
   "batteries" {>= "3.3.0"}
