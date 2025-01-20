@@ -203,12 +203,21 @@ let main () =
   let cx, cy, cz = V3.to_triplet ref_mol_init_center in
   (* start solution: best rotation found so far; translated at ref_mol's center *)
   let init_params = [|rx; ry; rz; cx; cy; cz|] in
+  printf "best_params:\n";
+  (* each float prefixed by one space on purpose *)
+  printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n%!"
+    init_params.(0)
+    init_params.(1)
+    init_params.(2)
+    init_params.(3)
+    init_params.(4)
+    init_params.(5);
   let best_params, error = nlopt_optimize init_params ref_mol_bsts cand_mol 100_000 in
   if error < !best_score then
     (Log.info "score improved: %f" error;
      printf "best_params:\n";
      (* each float prefixed by one space on purpose *)
-     printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n"
+     printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n%!"
        best_params.(0)
        best_params.(1)
        best_params.(2)
