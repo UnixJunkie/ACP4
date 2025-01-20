@@ -140,7 +140,8 @@ let main () =
               %s\n  \
               [-ref <filename.ph4>]: reference structure\n  \
               [-cand <filename.ph4>]: candidate structure\n  \
-              [-o <filename.ph4>]: optimally superposed cand. structure\n  \
+              [-oph4 <filename.ph4>]: optimally superposed cand. structure\n  \
+              [-o <filename.txt>]: 6 optimal parameters\n  \
               [--rand-start]: randomize starting position of cand. before\n  \
               starting optimization (for tests).\n  \
               [-v]: verbose/debug mode\n"
@@ -154,7 +155,8 @@ let main () =
   (* - RHS = B: the candidate structure *)
   let ref_fn = CLI.get_string ["-ref"] args in
   let cand_fn = CLI.get_string ["-cand"] args in
-  let output_fn = CLI.get_string ["-o"] args in
+  let txt_out_fn = CLI.get_string ["-o"] args in
+  let ph4_out_fn = CLI.get_string ["-oph4"] args in
   CLI.finalize (); (* -------------------------------------------------- *)
   let ref_mol = read_one_ph4_molecule ref_fn in
   let cand_mol =
@@ -189,8 +191,8 @@ let main () =
   let rotated = rotate_centered_molecule cand_mol !best_rot in
   (* translate it back *)
   let translated = translate_molecule rotated ref_mol_init_center in
-  Log.info "writing: %s" output_fn;
-  Ph4.to_file output_fn translated;
+  Log.info "writing: %s" ph4_out_fn;
+  Ph4.to_file ph4_out_fn translated;
   (* try global optim. of this initial solution
      if it improves the current solution, we will report it *)
   (* GLOBAL SEARCH --------------------------------------------------------------- *)
@@ -203,30 +205,30 @@ let main () =
   let cx, cy, cz = V3.to_triplet ref_mol_init_center in
   (* start solution: best rotation found so far; translated at ref_mol's center *)
   let init_params = [|rx; ry; rz; cx; cy; cz|] in
-  printf "best_params:\n";
-  (* each float prefixed by one space on purpose *)
-  printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n%!"
-    init_params.(0)
-    init_params.(1)
-    init_params.(2)
-    init_params.(3)
-    init_params.(4)
-    init_params.(5);
+  Log.info "writing: %s" txt_out_fn;
+  LO.with_out_file txt_out_fn (fun out ->
+      fprintf out "%f\n%f\n%f\n%f\n%f\n%f\n"
+        init_params.(0)
+        init_params.(1)
+        init_params.(2)
+        init_params.(3)
+        init_params.(4)
+        init_params.(5)
+    );
   let best_params, error = nlopt_optimize init_params ref_mol_bsts cand_mol 100_000 in
   if error < !best_score then
     (Log.info "score improved: %f" error;
-     printf "best_params:\n";
-     (* each float prefixed by one space on purpose *)
-     printf " -r \" %f, %f, %f\" -to \" %f, %f, %f\"\n%!"
-       best_params.(0)
-       best_params.(1)
-       best_params.(2)
-       best_params.(3)
-       best_params.(4)
-       best_params.(5);
+     LO.with_out_file txt_out_fn (fun out ->
+         fprintf out "%f\n%f\n%f\n%f\n%f\n%f\n"
+           best_params.(0)
+           best_params.(1)
+           best_params.(2)
+           best_params.(3)
+           best_params.(4)
+           best_params.(5)
+       );
      let cand_opt = place_molecule cand_mol best_params in
-     Log.info "writing: %s" output_fn;
-     Ph4.to_file output_fn cand_opt
+     Ph4.to_file ph4_out_fn cand_opt
     )
 
 let () = main ()
