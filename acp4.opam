@@ -11,6 +11,7 @@ install: [
   ["cp" "bin/acp4_get_pocket.py" "%{bin}%/acp4_get_pocket.py"]
   ["cp" "bin/acp4_renum_conf.py" "%{bin}%/acp4_renum_conf.py"]
   ["cp" "bin/acp4_pdb_move.py" "%{bin}%/acp4_pdb_move.py"]
+  ["cp" "bin/acp4_pdb_superpose.sh" "%{bin}%/acp4_pdb_superpose.sh"]
 ]
 depends: [
   "batteries" {>= "3.3.0"}
