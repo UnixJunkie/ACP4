@@ -45,7 +45,8 @@ echo "INFO: optimal parameters:" >> /dev/stderr
 tail -6 ${TMP_OUT_DIR}/params.txt >> /dev/stderr
 
 echo "INFO: optimally superposed pdb in: "${SUP_PDB} >> /dev/stderr
-acp4_pdb_move.py -i ${MOV_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${SUP_PDB}
+acp4_pdb_move.py -i ${MOV_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${SUP_PDB} \
+                 2>&1 >> ${TMP_OUT_DIR}/acp4_pdb_move.log
 
 ## visualize
 # pymol ${REF_PDB} ${SUP_PDB}
