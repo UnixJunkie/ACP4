@@ -4,19 +4,25 @@ set -u
 #set -x #DEBUG
 
 if [ "$#" -eq 0 ]; then
-    echo "usage: acp4_pdb_superpose.sh REF.pdb MOV.pdb"
+    echo "usage: acp4_pdb_superpose.sh REF.pdb MOV.pdb WHO.pdb"
     echo "       will try to optimally superpose MOV onto REF"
-    echo "       in the ph4 feature space"
+    echo "       in the ph4 feature space; then apply the same"
+    echo "       transformation to WHO"
+    echo "       REF: binding-site 1"
+    echo "       MOV: binding-site 2"
+    echo "       WHO: whole PDB for MOV"
     exit 1
 fi
 
 REF_PDB=$1
 MOV_PDB=$2
+ALL_PDB=$3
 
 DIR=`dirname ${MOV_PDB}`
 BASE=`basename ${MOV_PDB} .pdb`
-# output file: superposed PDB
-SUP_PDB=${DIR}/${BASE}_sup.pdb
+# output file: superposed binding-site
+SUP_PDB=${DIR}/${BASE}_sup_BS.pdb
+WHO_PDB=${DIR}/${BASE}_sup_whole.pdb
 
 echo "WARNING: heuristic method" >> /dev/stderr
 
@@ -32,8 +38,8 @@ obabel ${MOV_PDB} -O ${TMP_OUT_DIR}/mov.sdf 2>&1 >> ${TMP_OUT_DIR}/obabel.log
 source /apps/miniconda3/4.10.3/etc/profile.d/conda.sh
 conda activate /apps/conda_envs/rdkit_prody
 
-acp4_ph4.py -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
-acp4_ph4.py -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
+acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
+acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
 
 # try to find optimal transform (requires the nlopt library)
 export LD_LIBRARY_PATH=/apps/nlopt/2.7.1/lib64:${LD_LIBRARY_PATH}
@@ -44,8 +50,12 @@ acp4_superpose -ref ${TMP_OUT_DIR}/ref.ph4 -cand ${TMP_OUT_DIR}/mov.ph4 \
 echo "INFO: optimal parameters:" >> /dev/stderr
 tail -6 ${TMP_OUT_DIR}/params.txt >> /dev/stderr
 
-echo "INFO: optimally superposed pdb in: "${SUP_PDB} >> /dev/stderr
+echo "INFO: optimally superposed binding-site in: "${SUP_PDB} >> /dev/stderr
 acp4_pdb_move.py -i ${MOV_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${SUP_PDB} \
+                 2>&1 >> ${TMP_OUT_DIR}/acp4_pdb_move.log
+
+echo "INFO: optimally superposed whole pdb in: "${WHO_PDB} >> /dev/stderr
+acp4_pdb_move.py -i ${ALL_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${WHO_PDB} \
                  2>&1 >> ${TMP_OUT_DIR}/acp4_pdb_move.log
 
 ## visualize
