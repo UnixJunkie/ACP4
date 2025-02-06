@@ -74,7 +74,10 @@ if __name__ == "__main__":
     # 1) center PDB
     atoms = parsePDB(input_fn)
     previous_center = calcCenter(atoms)
-    print('prev_center: %s' % previous_center)
+    cx, cy, cz = previous_center[0], previous_center[1], previous_center[2]
+    # output current center in case we need to apply the same transform later
+    # to another pdb
+    print('prev_center: %f %f %f' % (cx, cy, cz))
     new_center = None
     if relative:
         new_center = previous_center + np.array([dx, dy, dz])
