@@ -47,6 +47,15 @@ def read_last_six_params(fn):
               (fn, n), file=sys.stderr)
         exit(1)
 
+def read_center_from_file(center_fn):
+    line = open(center_fn).readline()
+    line = line.strip()
+    toks = line.split(',')
+    x = float(toks[0])
+    y = float(toks[1])
+    z = float(toks[2])
+    return [x, y, z]
+
 if __name__ == "__main__":
     # CLI options parsing -----------------------------------------------------
     parser = argparse.ArgumentParser(
@@ -57,9 +66,9 @@ if __name__ == "__main__":
                         help = "optimal parameters input file")
     parser.add_argument("-o", metavar = "output.pdb", dest = "output_fn",
                         help = "moved PDB output")
-    parser.add_argument('--relative', dest='relative', action='store_true',
-                        help = "relative translational move (default: absolute)",
-                        default = False)
+    parser.add_argument('--center', dest='center_fn', type=str,
+                        help = "binding-site x,y,z coordinates in a file",
+                        default = None)
     if len(sys.argv) == 1:
         # show help in case user has no clue of what to do
         parser.print_help(sys.stderr)
@@ -69,26 +78,30 @@ if __name__ == "__main__":
     input_fn: str = args.input_fn
     in_params_fn: str = args.in_params_fn
     output_fn: str = args.output_fn
-    relative = args.relative
     rx, ry, rz, dx, dy, dz = read_last_six_params(in_params_fn)
+    center_fn = args.center_fn
+    bs_center = None
+    if center_fn != None:
+        bs_center = read_center_from_file(center_fn)
     # 1) center PDB
     atoms = parsePDB(input_fn)
-    previous_center = calcCenter(atoms)
-    cx, cy, cz = previous_center[0], previous_center[1], previous_center[2]
+    current_center = calcCenter(atoms)
+    cx, cy, cz = current_center[0], current_center[1], current_center[2]
     # output current center in case we need to apply the same transform later
     # to another pdb
-    print('prev_center: %f %f %f' % (cx, cy, cz))
-    new_center = None
-    if relative:
-        new_center = previous_center + np.array([dx, dy, dz])
-    else: # absolute translation
-        new_center = np.array([dx, dy, dz])
-    print('next_center: %s' % new_center)
+    print('prev_center: %f %f %f' % (cx, cy, cz), file=sys.stderr)
+    new_center = np.array([dx, dy, dz])
+    print('next_center: %s' % new_center, file=sys.stderr)
     moveAtoms(atoms, to=origin)
+    if bs_center != None:
+        print('moving BS center to origin', file=sys.stderr)
+        bs_displacement = current_center - bs_center
+        print('bs_displacement: %s' % bs_displacement, file=sys.stderr)
+        moveAtoms(atoms, by=bs_displacement)
     # 2) rotate around Ox, Oy then Oz
     rot = rot_from_rx_ry_rz(rx, ry, rz)
     rot.apply(atoms)
     # 3) translate to final position
-    moveAtoms(atoms, to=new_center)
+    moveAtoms(atoms, by=new_center)
     # 4) write out pdb
     writePDB(output_fn, atoms)
