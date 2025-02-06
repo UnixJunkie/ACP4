@@ -38,8 +38,10 @@ obabel ${MOV_PDB} -O ${TMP_OUT_DIR}/mov.sdf 2>&1 >> ${TMP_OUT_DIR}/obabel.log
 source /apps/miniconda3/4.10.3/etc/profile.d/conda.sh
 conda activate /apps/conda_envs/rdkit_prody
 
-acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
-acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
+acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/ref.sdf -o ${TMP_OUT_DIR}/ref.ph4 \
+            2>&1 >  ${TMP_OUT_DIR}/acp4_ph4.log
+acp4_ph4.py --permissive -i ${TMP_OUT_DIR}/mov.sdf -o ${TMP_OUT_DIR}/mov.ph4 \
+            2>&1 >> ${TMP_OUT_DIR}/acp4_ph4.log
 
 # try to find optimal transform (requires the nlopt library)
 export LD_LIBRARY_PATH=/apps/nlopt/2.7.1/lib64:${LD_LIBRARY_PATH}
@@ -52,10 +54,15 @@ tail -6 ${TMP_OUT_DIR}/params.txt >> /dev/stderr
 
 echo "INFO: optimally superposed binding-site in: "${SUP_PDB} >> /dev/stderr
 acp4_pdb_move.py -i ${MOV_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${SUP_PDB} \
-                 2>&1 >> ${TMP_OUT_DIR}/acp4_pdb_move.log
+                 2>&1 > ${TMP_OUT_DIR}/acp4_pdb_move.log
+BS_CENTER=`grep -F 'prev_center:' ${TMP_OUT_DIR}/acp4_pdb_move.log | awk '{print $2","$3","$4}'`
+echo 'BS_CENTER: '${BS_CENTER} >> /dev/stderr
+echo ${BS_CENTER} > ${TMP_OUT_DIR}/center.txt
 
+# make the whole PDB undergo the optimal transformation
 echo "INFO: optimally superposed whole pdb in: "${WHO_PDB} >> /dev/stderr
-acp4_pdb_move.py -i ${ALL_PDB} -ip ${TMP_OUT_DIR}/params.txt -o ${WHO_PDB} \
+acp4_pdb_move.py -i ${ALL_PDB} -ip ${TMP_OUT_DIR}/params.txt \
+                 -o ${WHO_PDB} --center ${TMP_OUT_DIR}/center.txt \
                  2>&1 >> ${TMP_OUT_DIR}/acp4_pdb_move.log
 
 ## visualize
