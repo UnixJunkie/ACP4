@@ -23,3 +23,14 @@ obabel moved_lig.pdb          -O moved.sdf
 
 # visualize
 pymol data/3rfm_xtal_lig.pdb opt.pdb
+
+# get binding-site for CFF in PDB:3rfm
+acp4_get_pocket.py data/3rfm.pdb data/3rfm_pocket.txt data/3rfm_pocket.pdb
+# get binding-site for CFF in PDB:5mzp
+acp4_get_pocket.py data/5mzp.pdb data/5mzp_pocket.txt data/5mzp_pocket.pdb
+
+acp4_pdb_superpose.sh data/3rfm_pocket.pdb data/5mzp_pocket.pdb data/5mzp.pdb
+
+# visualize
+pymol data/3rfm.pdb data/3rfm_pocket.pdb data/5mzp.pdb data/5mzp_pocket.pdb \
+      data/5mzp_pocket_sup_BS.pdb data/5mzp_pocket_sup_whole.pdb
