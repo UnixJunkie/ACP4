@@ -89,7 +89,7 @@ if __name__ == "__main__":
     cx, cy, cz = current_center[0], current_center[1], current_center[2]
     # output current center in case we need to apply the same transform later
     # to another pdb
-    print('prev_center: %f %f %f' % (cx, cy, cz), file=sys.stderr)
+    print('prev_center: %f %f %f' % (cx, cy, cz))
     new_center = np.array([dx, dy, dz])
     print('next_center: %s' % new_center, file=sys.stderr)
     moveAtoms(atoms, to=origin)
