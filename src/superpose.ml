@@ -29,8 +29,11 @@ let score_molecule_pose bsts m =
       let bst = bsts.(i) in
       let cand_coords = Ph4.get_coords_with_feat m feat in
       A.iter (fun xyz ->
-          let _nn, dist = BST.nearest_neighbor xyz bst in
-          error := !error +. dist
+          try
+            let _nn, dist = BST.nearest_neighbor xyz bst in
+            error := !error +. dist
+          with Not_found ->
+            () (* this feature is unmatched *)
         ) cand_coords
     ) Ph4.all_features;
   !error
