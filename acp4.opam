@@ -26,6 +26,7 @@ depends: [
   "ocaml" {>= "4.08"}
   "parany" {>= "11.0.0"}
   "vector3"
+  "molenc"
 ]
 depopts: [
   "conf-gnuplot" # ROC curves will not show if not present
